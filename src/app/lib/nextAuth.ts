@@ -5,7 +5,6 @@ import bcrypt from 'bcryptjs';
 import { db } from '@/app/lib/db';
 import { v4 as uuid } from 'uuid';
 import { sendVerificationEmail } from '@/app/lib/email';
-import speakeasy from 'speakeasy';
 
 declare module 'next-auth' {
   interface Session {
@@ -33,7 +32,6 @@ export const authOptions: AuthOptions = {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
         name: { label: 'Name', type: 'text' },
-        totp: { label: '2FA Code', type: 'text' },
       },
       async authorize(credentials) {
         console.log('Authorize called with credentials:', credentials);
@@ -52,7 +50,7 @@ export const authOptions: AuthOptions = {
         console.log('User found:', user);
         if (!user && credentials.name) {
           const hashedPassword = await bcrypt.hash(credentials.password, 10);
-          const verificationToken = uuid(); // Ensure unique token
+          const verificationToken = uuid();
           console.log('Generated verificationToken:', verificationToken);
           const newUser = await db.user.create({
             data: {
@@ -60,8 +58,8 @@ export const authOptions: AuthOptions = {
               email: credentials.email,
               name: credentials.name,
               password: hashedPassword,
-              verificationToken: verificationToken, // Explicitly set
-              emailVerified: false, // Explicitly set to false
+              verificationToken,
+              emailVerified: false,
             },
           }).catch(err => {
             console.log('User creation error:', err);
@@ -82,21 +80,6 @@ export const authOptions: AuthOptions = {
           throw new Error('Email not verified');
         }
 
-        if (user.twoFactorEnabled && !credentials.totp) {
-          throw new Error('2FA token required');
-        }
-
-        if (user.twoFactorEnabled && credentials.totp) {
-          const isValidTOTP = speakeasy.totp.verify({
-            secret: user.twoFactorSecret!,
-            encoding: 'base32',
-            token: credentials.totp,
-          });
-          if (!isValidTOTP) {
-            throw new Error('Invalid 2FA token');
-          }
-        }
-
         console.log('User authenticated:', { id: user.id, email: user.email });
         return { id: user.id, name: user.name, email: user.email };
       },
@@ -107,9 +90,29 @@ export const authOptions: AuthOptions = {
     maxAge: 60 * 60 * 24 * 30,
   },
   callbacks: {
-    async jwt({ token, user }) {
-      console.log('JWT Callback:', { token, user });
-      if (user) {
+    async jwt({ token, user, account, profile }) {
+      console.log('JWT Callback:', { token, user, account, profile });
+      // Handle new Google user registration
+      if (account?.provider === 'google' && user) {
+        const existingUser = await db.user.findUnique({
+          where: { email: user.email as string },
+        });
+        if (!existingUser) {
+          const newUser = await db.user.create({
+            data: {
+              id: uuid(),
+              email: user.email as string,
+              name: user.name as string,
+              emailVerified: true, // Google verifies email
+            },
+          });
+          token.id = newUser.id;
+          console.log('New Google user created:', newUser.email);
+        } else {
+          token.id = existingUser.id;
+          console.log('Existing user authenticated with Google:', existingUser.email);
+        }
+      } else if (user) {
         token.id = user.id;
       }
       return token;
