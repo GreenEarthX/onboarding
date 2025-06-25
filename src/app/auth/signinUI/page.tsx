@@ -1,4 +1,4 @@
-'use client'
+'use client';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import AuthTabs from '@/app/_components/AuthTabs';
@@ -9,9 +9,16 @@ import Image from 'next/image';
 
 export default function SigninPage() {
   const [activeTab, setActiveTab] = useState<'signin' | 'signup'>('signin');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [name, setName] = useState<string>('');
+
+  const handleTabChange = (tab: 'signin' | 'signup') => {
+    setActiveTab(tab);
+    setEmail('');
+    setPassword('');
+    setName('');
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-blue-100 px-4">
@@ -22,18 +29,20 @@ export default function SigninPage() {
           </div>
         </div>
 
-        <AuthTabs activeTab={activeTab} onChange={(tab) => {
-          setActiveTab(tab);
-          setEmail('');
-          setPassword('');
-          setName('');
-        }} />
+        <AuthTabs activeTab={activeTab} onChange={handleTabChange} />
 
         <div className="p-6 space-y-6">
           {activeTab === 'signin' ? (
             <SigninForm email={email} password={password} setEmail={setEmail} setPassword={setPassword} />
           ) : (
-            <SignupForm name={name} email={email} password={password} setName={setName} setEmail={setEmail} setPassword={setPassword} />
+            <SignupForm
+              name={name}
+              email={email}
+              password={password}
+              setName={setName}
+              setEmail={setEmail}
+              setPassword={setPassword}
+            />
           )}
 
           <div className="relative">
@@ -52,12 +61,16 @@ export default function SigninPage() {
           {activeTab === 'signin' ? (
             <>
               Don’t have an account?{' '}
-              <button onClick={() => setActiveTab('signup')} className="text-indigo-600 font-medium">Sign up</button>
+              <button onClick={() => handleTabChange('signup')} className="text-indigo-600 font-medium">
+                Sign up
+              </button>
             </>
           ) : (
             <>
               Already have an account?{' '}
-              <button onClick={() => setActiveTab('signin')} className="text-indigo-600 font-medium">Sign in</button>
+              <button onClick={() => handleTabChange('signin')} className="text-indigo-600 font-medium">
+                Sign in
+              </button>
             </>
           )}
         </div>

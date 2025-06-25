@@ -1,5 +1,6 @@
 'use client';
-
+import { useState, FormEvent } from 'react';
+import { signIn } from 'next-auth/react';
 import { FaEnvelope, FaLock, FaUser } from 'react-icons/fa';
 
 interface SignupFormProps {
@@ -19,9 +20,33 @@ export default function SignupForm({
   setEmail,
   setPassword,
 }: SignupFormProps) {
+  const [error, setError] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
+
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    const result = await signIn('credentials', {
+      redirect: false,
+      name,
+      email,
+      password,
+    });
+
+    setLoading(false);
+
+    if (result?.error) {
+      setError(result.error);
+    } else {
+      window.location.href = '/';
+    }
+  };
+
   return (
-    <div className="space-y-4">
-      {/* Name */}
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {error && <div className="text-red-500 text-sm">{error}</div>}
       <div>
         <label className="text-sm">Name</label>
         <div className="relative">
@@ -29,14 +54,13 @@ export default function SignupForm({
           <input
             type="text"
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
             className="pl-10 w-full px-4 py-2 rounded border"
             placeholder="Your Name"
+            required
           />
         </div>
       </div>
-
-      {/* Email */}
       <div>
         <label className="text-sm">Email</label>
         <div className="relative">
@@ -44,14 +68,13 @@ export default function SignupForm({
           <input
             type="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
             className="pl-10 w-full px-4 py-2 rounded border"
             placeholder="you@example.com"
+            required
           />
         </div>
       </div>
-
-      {/* Password */}
       <div>
         <label className="text-sm">Password</label>
         <div className="relative">
@@ -59,16 +82,20 @@ export default function SignupForm({
           <input
             type="password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
             className="pl-10 w-full px-4 py-2 rounded border"
             placeholder="••••••••"
+            required
           />
         </div>
       </div>
-
-      <button className="w-full py-2 bg-gradient-to-r from-[#0072BC] to-[#00B140] text-white rounded  transition">
-        Create Account
+      <button
+        type="submit"
+        disabled={loading}
+        className="w-full py-2 bg-gradient-to-r from-[#0072BC] to-[#00B140] text-white rounded disabled:opacity-50"
+      >
+        {loading ? 'Creating Account...' : 'Create Account'}
       </button>
-    </div>
+    </form>
   );
 }
