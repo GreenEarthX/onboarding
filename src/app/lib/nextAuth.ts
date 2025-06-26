@@ -1,16 +1,28 @@
-import { AuthOptions, DefaultSession } from 'next-auth';
+import { AuthOptions, DefaultSession, User } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import GoogleProvider from 'next-auth/providers/google';
 import bcrypt from 'bcryptjs';
 import { db } from '@/app/lib/db';
 import { v4 as uuid } from 'uuid';
 import { sendVerificationEmail } from '@/app/lib/email';
+import speakeasy from 'speakeasy';
 
 declare module 'next-auth' {
   interface Session {
     user: {
       id: string;
     } & DefaultSession['user'];
+  }
+
+  interface User {
+    id: string;
+    email: string;
+    name: string | null;
+    password: string | null;
+    twoFactorEnabled: boolean;
+    twoFactorSecret: string | null;
+    emailVerified: boolean;
+    verificationToken: string | null;
   }
 }
 
@@ -32,8 +44,9 @@ export const authOptions: AuthOptions = {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
         name: { label: 'Name', type: 'text' },
+        totp: { label: '2FA Code', type: 'text', required: false },
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         console.log('Authorize called with credentials:', credentials);
         if (!credentials?.email || !credentials?.password) {
           console.log('Missing credentials:', { email: credentials?.email, password: credentials?.password });
@@ -60,14 +73,16 @@ export const authOptions: AuthOptions = {
               password: hashedPassword,
               verificationToken,
               emailVerified: false,
+              twoFactorEnabled: false,
+              twoFactorSecret: null,
             },
           }).catch(err => {
             console.log('User creation error:', err);
             throw new Error('User creation failed');
           });
           await sendVerificationEmail(credentials.email, verificationToken);
-          console.log('Verification email sent for new user:', newUser.email, 'with token:', verificationToken);
-          throw new Error('Please verify your email before signing in');
+          console.log('Verification email sent for new user:', newUser.email);
+          return null;
         }
 
         if (!user || !user.password || !(await bcrypt.compare(credentials.password, user.password))) {
@@ -80,8 +95,26 @@ export const authOptions: AuthOptions = {
           throw new Error('Email not verified');
         }
 
+        if (user.twoFactorEnabled && !credentials.totp) {
+          console.log('2FA required but no code provided for:', user.email);
+          throw new Error('2FA code required');
+        }
+
+        if (user.twoFactorEnabled && credentials.totp) {
+          const isValidTOTP = speakeasy.totp.verify({
+            secret: user.twoFactorSecret!,
+            encoding: 'base32',
+            token: credentials.totp,
+            window: 1,
+          });
+          if (!isValidTOTP) {
+            console.log('Invalid 2FA token for:', user.email);
+            throw new Error('Invalid 2FA code');
+          }
+        }
+
         console.log('User authenticated:', { id: user.id, email: user.email });
-        return { id: user.id, name: user.name, email: user.email };
+        return user;
       },
     }),
   ],
@@ -92,7 +125,6 @@ export const authOptions: AuthOptions = {
   callbacks: {
     async jwt({ token, user, account, profile }) {
       console.log('JWT Callback:', { token, user, account, profile });
-      // Handle new Google user registration
       if (account?.provider === 'google' && user) {
         const existingUser = await db.user.findUnique({
           where: { email: user.email as string },
@@ -103,7 +135,9 @@ export const authOptions: AuthOptions = {
               id: uuid(),
               email: user.email as string,
               name: user.name as string,
-              emailVerified: true, // Google verifies email
+              emailVerified: true,
+              twoFactorEnabled: false,
+              twoFactorSecret: null,
             },
           });
           token.id = newUser.id;

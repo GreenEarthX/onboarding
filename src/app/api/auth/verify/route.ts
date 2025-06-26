@@ -3,10 +3,11 @@ import { db } from '@/app/lib/db';
 
 export async function POST(request: NextRequest) {
   const { token } = await request.json();
-  console.log('Verification token received:', token);
+  console.log('Verification request received with token:', token);
 
   if (!token) {
-    return NextResponse.json({ error: 'No token provided' }, { status: 400 });
+    console.log('No token provided');
+    return NextResponse.json({ success: false, error: 'No token provided' }, { status: 400 });
   }
 
   const user = await db.user.findFirst({
@@ -18,17 +19,18 @@ export async function POST(request: NextRequest) {
 
   if (!user) {
     console.log('No user found for token:', token);
-    return NextResponse.json({ error: 'Invalid token' }, { status: 400 });
+    return NextResponse.json({ success: false, error: 'Invalid token' }, { status: 400 });
   }
 
-  await db.user.update({
-    where: { id: user.id },
-    data: { emailVerified: true, verificationToken: null },
-  }).catch(err => {
-    console.log('User update error:', err);
-    return NextResponse.json({ error: 'Verification failed' }, { status: 500 });
-  });
-
-  console.log('User verified:', user.email);
-  return NextResponse.json({ success: true, message: 'Email verified successfully' });
+  try {
+    await db.user.update({
+      where: { id: user.id },
+      data: { emailVerified: true, verificationToken: null },
+    });
+    console.log('User verified successfully:', user.email);
+    return NextResponse.json({ success: true, message: 'Email verified successfully' }, { status: 200 });
+  } catch (err) {
+    console.error('User update error:', err);
+    return NextResponse.json({ success: false, error: 'Verification failed' }, { status: 500 });
+  }
 }

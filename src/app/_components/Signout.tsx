@@ -11,7 +11,7 @@ const Signout = ({ className }: SignoutProps) => {
     <button
       type='button'
       onClick={() => { signOut() }}
-      className={`${className} text-sm text-white hover:text-emerald-200 transition-colors`}
+      className={`${className} text-sm text-blue hover:text-emerald-200 transition-colors`}
       >
         Sign Out
       </button>

@@ -33,14 +33,20 @@ export default function SignupForm({
       name,
       email,
       password,
+      callbackUrl: '/auth/verify', // Redirect to verification page after sign-up
     });
 
     setLoading(false);
 
     if (result?.error) {
       setError(result.error);
+    } else if (result?.ok) {
+      // Sign-up successful, user needs to verify email
+      setError('Please check your email to verify your account.');
+      // Optionally, you can redirect or show a link to the verification page
+      // window.location.href = '/auth/verify'; // Uncomment if you want immediate redirect
     } else {
-      window.location.href = '/';
+      setError('An unexpected error occurred. Please try again.');
     }
   };
 
