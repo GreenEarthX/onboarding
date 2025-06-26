@@ -24,31 +24,30 @@ export default function SignupForm({
   const [loading, setLoading] = useState<boolean>(false);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
+  e.preventDefault();
+  setLoading(true);
+  setError('');
 
-    const result = await signIn('credentials', {
-      redirect: false,
-      name,
-      email,
-      password,
-      callbackUrl: '/auth/verify', // Redirect to verification page after sign-up
+  try {
+    const response = await fetch('/api/auth/signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, password }),
     });
 
+    const data = await response.json();
     setLoading(false);
 
-    if (result?.error) {
-      setError(result.error);
-    } else if (result?.ok) {
-      // Sign-up successful, user needs to verify email
-      setError('Please check your email to verify your account.');
-      // Optionally, you can redirect or show a link to the verification page
-      // window.location.href = '/auth/verify'; // Uncomment if you want immediate redirect
+    if (!response.ok || !data.success) {
+      setError(data.error || 'Signup failed. Please try again.');
     } else {
-      setError('An unexpected error occurred. Please try again.');
+      setError('Verification email sent! Please check your inbox (and spam folder).');
     }
-  };
+  } catch (err) {
+    setLoading(false);
+    setError('Unexpected error occurred. Try again later.');
+  }
+};
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">

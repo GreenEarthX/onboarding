@@ -10,27 +10,41 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: false, error: 'No token provided' }, { status: 400 });
   }
 
-  const user = await db.user.findFirst({
-    where: { verificationToken: token },
-  }).catch(err => {
-    console.log('Database findFirst error:', err);
-    return null;
-  });
-
-  if (!user) {
-    console.log('No user found for token:', token);
-    return NextResponse.json({ success: false, error: 'Invalid token' }, { status: 400 });
-  }
-
   try {
-    await db.user.update({
-      where: { id: user.id },
-      data: { emailVerified: true, verificationToken: null },
+    const user = await db.user.findFirst({
+      where: { verificationToken: token },
     });
-    console.log('User verified successfully:', user.email);
-    return NextResponse.json({ success: true, message: 'Email verified successfully' }, { status: 200 });
+
+    if (user) {
+      await db.user.update({
+        where: { id: user.id },
+        data: {
+          emailVerified: true,
+          verificationToken: null,
+        },
+      });
+      console.log('User verified successfully:', user.email);
+      return NextResponse.json({ success: true, message: 'Email verified successfully' }, { status: 200 });
+    }
+
+    // 🔥 If token not found, check if user was already verified
+    const previouslyVerifiedUser = await db.user.findFirst({
+      where: {
+        emailVerified: true,
+        verificationToken: null,
+      },
+    });
+
+    if (previouslyVerifiedUser) {
+      console.log('Token already used — user previously verified.');
+      return NextResponse.json({ success: true, message: 'Already verified' }, { status: 200 });
+    }
+
+    console.log('No user found for token:', token);
+    return NextResponse.json({ success: false, error: 'Invalid or expired token' }, { status: 400 });
+
   } catch (err) {
-    console.error('User update error:', err);
-    return NextResponse.json({ success: false, error: 'Verification failed' }, { status: 500 });
+    console.error('Verification error:', err);
+    return NextResponse.json({ success: false, error: 'Server error' }, { status: 500 });
   }
 }

@@ -11,6 +11,10 @@ declare module 'next-auth' {
   interface Session {
     user: {
       id: string;
+      name?: string | null | undefined;
+      email?: string | null | undefined;
+      image?: string | null | undefined;
+      twoFactorEnabled: boolean;
     } & DefaultSession['user'];
   }
 
@@ -29,6 +33,7 @@ declare module 'next-auth' {
 declare module 'next-auth/jwt' {
   interface JWT {
     id: string;
+    twoFactorEnabled: boolean;
   }
 }
 
@@ -141,13 +146,16 @@ export const authOptions: AuthOptions = {
             },
           });
           token.id = newUser.id;
+          token.twoFactorEnabled = false;
           console.log('New Google user created:', newUser.email);
         } else {
           token.id = existingUser.id;
+          token.twoFactorEnabled = existingUser.twoFactorEnabled;
           console.log('Existing user authenticated with Google:', existingUser.email);
         }
       } else if (user) {
         token.id = user.id;
+        token.twoFactorEnabled = user.twoFactorEnabled;
       }
       return token;
     },
@@ -155,6 +163,7 @@ export const authOptions: AuthOptions = {
       console.log('Session Callback:', { session, token });
       if (token.id) {
         session.user.id = token.id;
+        session.user.twoFactorEnabled = token.twoFactorEnabled;
       }
       return session;
     },

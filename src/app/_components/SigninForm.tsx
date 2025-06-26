@@ -32,6 +32,8 @@ export default function SigninForm({ email, password, setEmail, setPassword }: {
     });
 
     setLoading(false);
+    console.log('Sign-in result:', result); // Debug the result object
+
     if (result?.error) {
       if (result.error.includes('2FA code required')) {
         // Send email in the request body
@@ -57,6 +59,8 @@ export default function SigninForm({ email, password, setEmail, setPassword }: {
       }
     } else if (result?.url) {
       window.location.href = result.url; // Direct to profile if no 2FA
+    } else {
+      setError('Sign-in failed. Please try again or contact support.');
     }
   };
 
@@ -73,11 +77,15 @@ export default function SigninForm({ email, password, setEmail, setPassword }: {
     });
 
     setLoading(false);
+    console.log('2FA Confirm result:', result); // Debug the result object
+
     if (result?.error) {
       setError(result.error);
     } else if (result?.url) {
       setShow2FAModal(false);
       window.location.href = result.url;
+    } else {
+      setError('2FA verification failed. Please try again.');
     }
   };
 
