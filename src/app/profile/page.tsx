@@ -27,15 +27,16 @@ const Profile = async () => {
           <p className="text-gray-500 text-sm mb-4">{session.user?.email}</p>
           <Signout />
           <div className="mt-4">
-            <form action={`/api/profile/2fa/${twoFactorEnabled ? 'disable' : 'enable'}`} method="POST">
-              <button
-                type="submit"
-                className="w-full px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-              >
-                {twoFactorEnabled ? 'Disable 2FA' : 'Enable 2FA'}
-              </button>
-            </form>
-            {/* Note: Disable logic would require a separate endpoint or client-side toggle */}
+            {!twoFactorEnabled && (
+              <form action="/api/profile/2fa/enable" method="POST">
+                <button
+                  type="submit"
+                  className="w-full px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                >
+                  Enable 2FA
+                </button>
+              </form>
+            )}
           </div>
         </div>
       ) : (
