@@ -9,12 +9,12 @@ export default withAuth(
    const pathname = request.nextUrl.pathname;
    const isAuth = await getToken({ req: request });
   
-   const protectedRoutes = ['/profile', '/admin'];
+   const protectedRoutes = ['/profile'];
    const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
-   const isAuthRoute = pathname.startsWith('/auth/signinUI') || pathname.startsWith('/auth/signup');
+   const isAuthRoute = pathname.startsWith('/auth/authenticate') ;
 
    if (!isAuth && isProtectedRoute) {
-       return NextResponse.redirect(new URL('/auth/signinUI', request.url));
+       return NextResponse.redirect(new URL('/auth/authenticate', request.url));
    }
 
    // Optional: prevent authenticated users from seeing login/signup

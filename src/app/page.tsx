@@ -22,7 +22,7 @@ export default function Home() {
 
       {/* Continue Button */}
       <Link
-        href="/auth/signinUI"
+        href="/auth/authenticate"
         className="px-8 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-lg"
       >
         Continue to platform

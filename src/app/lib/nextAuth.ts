@@ -170,7 +170,7 @@ export const authOptions: AuthOptions = {
   },
   secret: process.env.NEXTAUTH_SECRET as string,
   pages: {
-    signIn: '/auth/signinUI',
+    signIn: '/auth/authenticate',
     signOut: '/auth/signout',
     error: '/error',
     verifyRequest: '/verify-request',

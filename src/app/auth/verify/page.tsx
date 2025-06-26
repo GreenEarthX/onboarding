@@ -37,7 +37,7 @@ export default function VerifyPage() {
 
         if (ok && data.success) {
           setVerified(true);
-          router.push('/auth/signinUI?verified=true');
+          router.push('/auth/authenticate?verified=true');
           return; // ✅ Prevents continuing to error flow
         }
 
