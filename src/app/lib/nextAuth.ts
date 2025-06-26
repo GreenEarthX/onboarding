@@ -15,6 +15,7 @@ declare module 'next-auth' {
       email?: string | null | undefined;
       image?: string | null | undefined;
       twoFactorEnabled: boolean;
+      provider?: string;
     } & DefaultSession['user'];
   }
 
@@ -34,6 +35,7 @@ declare module 'next-auth/jwt' {
   interface JWT {
     id: string;
     twoFactorEnabled: boolean;
+    provider?: string;
   }
 }
 
@@ -130,6 +132,9 @@ export const authOptions: AuthOptions = {
   callbacks: {
     async jwt({ token, user, account, profile }) {
       console.log('JWT Callback:', { token, user, account, profile });
+      if (account?.provider) {
+        token.provider = account.provider; //  Track provider
+      }
       if (account?.provider === 'google' && user) {
         const existingUser = await db.user.findUnique({
           where: { email: user.email as string },
@@ -164,6 +169,7 @@ export const authOptions: AuthOptions = {
       if (token.id) {
         session.user.id = token.id;
         session.user.twoFactorEnabled = token.twoFactorEnabled;
+        session.user.provider = token.provider; // Track provider
       }
       return session;
     },
@@ -173,6 +179,5 @@ export const authOptions: AuthOptions = {
     signIn: '/auth/authenticate',
     signOut: '/auth/signout',
     error: '/error',
-    verifyRequest: '/verify-request',
   },
 };

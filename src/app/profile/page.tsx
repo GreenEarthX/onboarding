@@ -7,6 +7,7 @@ import Signout from "@/app/_components/Signout";
 const Profile = async () => {
   const session = await getServerSession(authOptions);
   const twoFactorEnabled = session?.user?.twoFactorEnabled || false;
+  const isCredentialsUser = session?.user?.provider === 'credentials';
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 to-purple-200">
@@ -25,9 +26,12 @@ const Profile = async () => {
             Welcome, {session.user?.name}!
           </h1>
           <p className="text-gray-500 text-sm mb-4">{session.user?.email}</p>
+
           <Signout />
-          <div className="mt-4">
-            {!twoFactorEnabled && (
+
+          {/* ✅ Only show to credentials-based users */}
+          {isCredentialsUser && !twoFactorEnabled && (
+            <div className="mt-4">
               <form action="/api/profile/2fa/enable" method="POST">
                 <button
                   type="submit"
@@ -36,8 +40,8 @@ const Profile = async () => {
                   Enable 2FA
                 </button>
               </form>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       ) : (
         <div className="bg-white shadow-lg rounded-xl p-8 animate-fadeIn">

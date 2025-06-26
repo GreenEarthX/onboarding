@@ -22,7 +22,7 @@ const OAuthButton = ({ provider }: OAuthButtonProps) => {
   return (
     <button
       onClick={() =>
-        signIn(provider, { redirect: true, callbackUrl: '/' })
+        signIn(provider, { redirect: true, callbackUrl: '/profile' })
       }
       className={`w-full flex items-center justify-center space-x-2 ${
         provider === 'google' ? 'bg-red-600 hover:bg-red-700' : 'bg-gray-800 hover:bg-gray-700'

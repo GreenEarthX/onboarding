@@ -8,6 +8,7 @@ declare module "next-auth" {
       email?: string | null | undefined;
       image?: string | null | undefined;
       twoFactorEnabled: boolean;
+      provider?: string;
     } & DefaultSession["user"];
   }
 }
