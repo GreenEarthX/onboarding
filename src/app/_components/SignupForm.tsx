@@ -2,6 +2,7 @@
 import { useState, FormEvent } from 'react';
 import { signIn } from 'next-auth/react';
 import { FaEnvelope, FaLock, FaUser } from 'react-icons/fa';
+import ReCAPTCHA from 'react-google-recaptcha';
 
 interface SignupFormProps {
   name: string;
@@ -22,32 +23,55 @@ export default function SignupForm({
 }: SignupFormProps) {
   const [error, setError] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
+  const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
+
+  const handleRecaptchaChange = (token: string | null) => {
+    setRecaptchaToken(token);
+  };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-  e.preventDefault();
-  setLoading(true);
-  setError('');
+    e.preventDefault();
+    setLoading(true);
+    setError('');
 
-  try {
-    const response = await fetch('/api/auth/signup', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, password }),
-    });
-
-    const data = await response.json();
-    setLoading(false);
-
-    if (!response.ok || !data.success) {
-      setError(data.error || 'Signup failed. Please try again.');
-    } else {
-      setError('Verification email sent! Please check your inbox (and spam folder).');
+    if (!recaptchaToken) {
+      setError('Please complete the reCAPTCHA verification.');
+      setLoading(false);
+      return;
     }
-  } catch (err) {
-    setLoading(false);
-    setError('Unexpected error occurred. Try again later.');
-  }
-};
+
+    try {
+      const response = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password, recaptchaToken }),
+      });
+
+      const data = await response.json();
+      setLoading(false);
+
+      if (!response.ok || !data.success) {
+        setError(data.error || 'Signup failed. Please try again.');
+        setName('');
+        setEmail('');
+        setPassword('');
+        setRecaptchaToken(null);
+      } else {
+        setError('Verification email sent! Please check your inbox (and spam folder).');
+        setName('');
+        setEmail('');
+        setPassword('');
+        setRecaptchaToken(null);
+      }
+    } catch (err) {
+      setLoading(false);
+      setError('Unexpected error occurred. Try again later.');
+      setName('');
+      setEmail('');
+      setPassword('');
+      setRecaptchaToken(null);
+    }
+  };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -94,9 +118,15 @@ export default function SignupForm({
           />
         </div>
       </div>
+      <div className="flex justify-center">
+        <ReCAPTCHA
+          sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || '6LeFz3MrAAAAAAHeQFSkH9YUVpR2XDiDxTHV9957'}
+          onChange={handleRecaptchaChange}
+        />
+      </div>
       <button
         type="submit"
-        disabled={loading}
+        disabled={loading || !recaptchaToken}
         className="w-full py-2 bg-gradient-to-r from-[#0072BC] to-[#00B140] text-white rounded disabled:opacity-50"
       >
         {loading ? 'Creating Account...' : 'Create Account'}

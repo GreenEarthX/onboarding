@@ -2,12 +2,13 @@
 import { useState, useEffect } from 'react';
 import { signIn } from 'next-auth/react';
 import { FaEnvelope, FaLock } from 'react-icons/fa';
-import { motion, AnimatePresence } from 'framer-motion'; // For modal animation
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function SigninForm({ email, password, setEmail, setPassword }: { email: string; password: string; setEmail: (value: string) => void; setPassword: (value: string) => void }) {
   const [totp, setTotp] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
   const [show2FAModal, setShow2FAModal] = useState(false);
 
   useEffect(() => {
@@ -32,16 +33,15 @@ export default function SigninForm({ email, password, setEmail, setPassword }: {
     });
 
     setLoading(false);
-    console.log('Sign-in result:', result); // Debug the result object
+    console.log('Sign-in result:', result);
 
     if (result?.error) {
       if (result.error.includes('2FA code required')) {
-        // Send email in the request body
         const response = await fetch('/api/auth/send-2fa', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          credentials: 'include', // Include session cookies
-          body: JSON.stringify({ email }), // Send email
+          credentials: 'include',
+          body: JSON.stringify({ email }),
         });
         const data = await response.json().catch(err => {
           console.error('Failed to parse JSON response:', err);
@@ -58,7 +58,7 @@ export default function SigninForm({ email, password, setEmail, setPassword }: {
         setError(result.error);
       }
     } else if (result?.url) {
-      window.location.href = result.url; // Direct to profile if no 2FA
+      window.location.href = result.url;
     } else {
       setError('Sign-in failed. Please try again or contact support.');
     }
@@ -77,7 +77,8 @@ export default function SigninForm({ email, password, setEmail, setPassword }: {
     });
 
     setLoading(false);
-    console.log('2FA Confirm result:', result); // Debug the result object
+    setTotp(''); // Reset TOTP input after confirm attempt
+    console.log('2FA Confirm result:', result);
 
     if (result?.error) {
       setError(result.error);
@@ -86,6 +87,31 @@ export default function SigninForm({ email, password, setEmail, setPassword }: {
       window.location.href = result.url;
     } else {
       setError('2FA verification failed. Please try again.');
+    }
+  };
+
+  const handleResend2FACode = async () => {
+    setResendLoading(true);
+    setError(null);
+    setTotp(''); // Reset TOTP input on resend
+
+    const response = await fetch('/api/auth/send-2fa', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ email }),
+    });
+    const data = await response.json().catch(err => {
+      console.error('Failed to parse JSON response:', err);
+      return { success: false, error: 'Invalid server response' };
+    });
+    console.log('Resend 2FA response:', data, 'Status:', response.status);
+
+    setResendLoading(false);
+    if (response.ok && data.success) {
+      setError('A new 6-digit 2FA code has been sent to your email.');
+    } else {
+      setError(data.error || 'Failed to resend 2FA code. Please try again.');
     }
   };
 
@@ -141,7 +167,7 @@ export default function SigninForm({ email, password, setEmail, setPassword }: {
             className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
           >
             <motion.div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
-              <h2 className="text-lg font-semibold mb-4">2FA Verification</h2>
+              <h2 className="text-lg font-semibold mb-4">Two-Factor Authentication Verification</h2>
               <p className="text-sm text-gray-600 mb-4">A 6-digit code has been sent to your email. Please enter it below.</p>
               <div>
                 <label className="text-sm">2FA Code</label>
@@ -155,7 +181,7 @@ export default function SigninForm({ email, password, setEmail, setPassword }: {
                   required
                 />
               </div>
-              <div className="mt-4 flex justify-end">
+              <div className="mt-4 flex justify-end space-x-2">
                 <button
                   type="button"
                   onClick={handleConfirm2FA}
@@ -163,6 +189,14 @@ export default function SigninForm({ email, password, setEmail, setPassword }: {
                   className="py-2 px-4 bg-gradient-to-r from-[#0072BC] to-[#00B140] text-white rounded disabled:opacity-50"
                 >
                   {loading ? 'Confirming...' : 'Confirm'}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleResend2FACode}
+                  disabled={resendLoading || loading}
+                  className="py-2 px-4 bg-gray-200 text-gray-700 rounded disabled:opacity-50"
+                >
+                  {resendLoading ? 'Sending...' : 'Resend Code'}
                 </button>
               </div>
               <button

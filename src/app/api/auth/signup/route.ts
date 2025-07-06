@@ -4,7 +4,22 @@ import { handleSignup } from '@/services/auth/signupService';
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { name, email, password } = body;
+    const { name, email, password, recaptchaToken } = body;
+
+    // Verify reCAPTCHA token
+    const recaptchaResponse = await fetch('https://www.google.com/recaptcha/api/siteverify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: `secret=${process.env.RECAPTCHA_SECRET_KEY}&response=${recaptchaToken}`,
+    });
+
+    const recaptchaData = await recaptchaResponse.json();
+    if (!recaptchaResponse.ok || !recaptchaData.success) {
+      return NextResponse.json(
+        { success: false, error: 'reCAPTCHA verification failed' },
+        { status: 400 }
+      );
+    }
 
     await handleSignup({ name, email, password });
 
