@@ -1,6 +1,6 @@
-import { db } from '@/app/lib/db';
+import { db } from '@/app/lib/prisma';
 import speakeasy from 'speakeasy';
-import { send2FACode } from '@/app/lib/email';
+import { send2FACode } from '@/app/lib/email/email';
 
 export async function handleSend2FA(email: string) {
   const user = await db.user.findUnique({ where: { email } });

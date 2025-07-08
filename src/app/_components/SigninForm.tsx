@@ -10,9 +10,11 @@ export default function SigninForm({ email, password, setEmail, setPassword }: {
   const [loading, setLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
   const [show2FAModal, setShow2FAModal] = useState(false);
+  const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
 
   useEffect(() => {
-    // Reset if email or password changes
     if (!email || !password) {
       setShow2FAModal(false);
       setTotp('');
@@ -77,7 +79,7 @@ export default function SigninForm({ email, password, setEmail, setPassword }: {
     });
 
     setLoading(false);
-    setTotp(''); // Reset TOTP input after confirm attempt
+    setTotp('');
     console.log('2FA Confirm result:', result);
 
     if (result?.error) {
@@ -93,7 +95,7 @@ export default function SigninForm({ email, password, setEmail, setPassword }: {
   const handleResend2FACode = async () => {
     setResendLoading(true);
     setError(null);
-    setTotp(''); // Reset TOTP input on resend
+    setTotp('');
 
     const response = await fetch('/api/auth/send-2fa', {
       method: 'POST',
@@ -115,6 +117,33 @@ export default function SigninForm({ email, password, setEmail, setPassword }: {
     }
   };
 
+  const handleForgotPassword = async () => {
+    setForgotLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: forgotEmail }),
+      });
+      const data = await response.json();
+
+      setForgotLoading(false);
+      if (response.ok && data.success) {
+        setError('Password reset link sent to your email.');
+        setShowForgotPasswordModal(false);
+        setForgotEmail('');
+      } else {
+        setError(data.error || 'Failed to send reset link. Please try again.');
+      }
+    } catch (error: any) {
+      setForgotLoading(false);
+      setError('Failed to process password reset. Please try again or contact support.');
+      console.error('Forgot password error:', error);
+    }
+  };
+
   return (
     <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
       {error && <div className="text-red-500 text-sm">{error}</div>}
@@ -129,7 +158,7 @@ export default function SigninForm({ email, password, setEmail, setPassword }: {
             className="pl-10 w-full px-4 py-2 rounded border"
             placeholder="you@example.com"
             required
-            disabled={loading || show2FAModal}
+            disabled={loading || show2FAModal || showForgotPasswordModal}
           />
         </div>
       </div>
@@ -144,15 +173,24 @@ export default function SigninForm({ email, password, setEmail, setPassword }: {
             className="pl-10 w-full px-4 py-2 rounded border"
             placeholder="••••••••"
             required
-            disabled={loading || show2FAModal}
+            disabled={loading || show2FAModal || showForgotPasswordModal}
           />
         </div>
       </div>
-
+      <div className="text-sm text-right">
+        <button
+          type="button"
+          onClick={() => setShowForgotPasswordModal(true)}
+          className="text-blue-500 hover:underline"
+          disabled={loading || show2FAModal}
+        >
+          Forgot Password?
+        </button>
+      </div>
       <button
         type="button"
         onClick={handleSignIn}
-        disabled={loading}
+        disabled={loading || showForgotPasswordModal}
         className="w-full py-2 bg-gradient-to-r from-[#0072BC] to-[#00B140] text-white rounded disabled:opacity-50"
       >
         {loading ? 'Processing...' : 'Sign In'}
@@ -206,6 +244,47 @@ export default function SigninForm({ email, password, setEmail, setPassword }: {
               >
                 Cancel
               </button>
+            </motion.div>
+          </motion.div>
+        )}
+        {showForgotPasswordModal && (
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          >
+            <motion.div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
+              <h2 className="text-lg font-semibold mb-4">Reset Your Password</h2>
+              <p className="text-sm text-gray-600 mb-4">Enter your email to receive a password reset link.</p>
+              <div>
+                <label className="text-sm">Email</label>
+                <input
+                  type="email"
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  className="w-full px-4 py-2 rounded border mt-2"
+                  placeholder="you@example.com"
+                  required
+                />
+              </div>
+              <div className="mt-4 flex justify-end space-x-2">
+                <button
+                  type="button"
+                  onClick={handleForgotPassword}
+                  disabled={forgotLoading || !forgotEmail}
+                  className="py-2 px-4 bg-gradient-to-r from-[#0072BC] to-[#00B140] text-white rounded disabled:opacity-50"
+                >
+                  {forgotLoading ? 'Sending...' : 'Send Reset Link'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowForgotPasswordModal(false)}
+                  className="py-2 px-4 bg-gray-200 text-gray-700 rounded"
+                >
+                  Cancel
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}

@@ -1,19 +1,29 @@
-// app/api/profile/login-history/route.ts
-import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/app/lib/db';
+import { NextRequest } from 'next/server';
+import { db } from '@/app/lib/prisma';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/lib/nextAuth';
+import { authOptions } from '@/app/lib/auth/nextAuth';
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  if (!session || !session.user?.email) {
+    return new Response(JSON.stringify([]), { status: 200 });
   }
 
-  const loginHistory = await db.loginHistory.findMany({
-    where: { userId: session.user.id },
-    orderBy: { timestamp: 'desc' },
-  });
+  try {
+    const history = await db.loginHistory.findMany({
+      where: {
+        user: { email: session.user.email },
+      },
+      orderBy: {
+        timestamp: 'desc',
+      },
+      take: 20, // limit to last 20
+    });
 
-  return NextResponse.json(loginHistory);
+    return Response.json(history);
+  } catch (error) {
+    console.error('Error fetching login history:', error);
+    return new Response(JSON.stringify([]), { status: 200 });
+  }
 }

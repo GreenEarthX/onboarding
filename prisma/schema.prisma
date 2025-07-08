@@ -8,17 +8,19 @@ datasource db {
 }
 
 model User {
-  id                String         @id
-  email             String         @unique
-  name              String?
-  password          String?
-  twoFactorSecret   String?
-  twoFactorEnabled  Boolean        @default(false)
-  emailVerified     Boolean        @default(false)
-  verificationToken String?
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
-  loginHistory      LoginHistory[] @relation("UserToLoginHistory")
+  id                    String         @id
+  email                 String         @unique
+  name                  String?
+  password              String?
+  twoFactorSecret       String?
+  twoFactorEnabled      Boolean        @default(false)
+  emailVerified         Boolean        @default(false)
+  verificationToken     String?
+  resetPasswordToken    String?        // Field for password reset token
+  resetPasswordTokenExpiry DateTime?   // Field for token expiry
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+  loginHistory          LoginHistory[] @relation("UserToLoginHistory")
 }
 
 model LoginHistory {

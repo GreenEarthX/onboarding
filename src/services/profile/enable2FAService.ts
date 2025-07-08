@@ -1,4 +1,4 @@
-import { db } from '@/app/lib/db';
+import { db } from '@/app/lib/prisma';
 import speakeasy from 'speakeasy';
 
 export async function handleEnable2FA(email: string) {

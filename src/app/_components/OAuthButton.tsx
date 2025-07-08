@@ -1,23 +1,21 @@
 'use client'
 
 import { signIn } from 'next-auth/react'
-import { FaGoogle, FaGithub, FaApple } from 'react-icons/fa' // Add FaApple
+import { FaGoogle, FaApple } from 'react-icons/fa'
 import React from 'react'
 
 type OAuthButtonProps = {
-  provider: 'google' | 'github' | 'apple' // Add apple to provider type
+  provider: 'google' | 'apple' 
 }
 
 const providerIcons = {
   google: <FaGoogle />,
-  github: <FaGithub />,
-  apple: <FaApple />, // Add Apple icon
+  apple: <FaApple />, 
 }
 
 const providerLabels = {
   google: 'Google',
-  github: 'GitHub',
-  apple: 'Apple', // Add Apple label
+  apple: 'Apple',
 }
 
 const OAuthButton = ({ provider }: OAuthButtonProps) => {
@@ -30,7 +28,7 @@ const OAuthButton = ({ provider }: OAuthButtonProps) => {
         provider === 'google'
           ? 'bg-red-600 hover:bg-red-700'
           : provider === 'apple'
-          ? 'bg-black hover:bg-gray-800' // Style for Apple
+          ? 'bg-black hover:bg-gray-800' 
           : 'bg-gray-800 hover:bg-gray-700'
       } text-white rounded-lg py-2 px-4 transition-colors`}
     >

@@ -1,9 +1,7 @@
 'use client';
 import Image from 'next/image';
-import { useState,useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/lib/nextAuth';
 import SigninWithGoogle from '@/app/_components/SigninWithGoogle';
 import Signout from '@/app/_components/Signout';
 
@@ -13,8 +11,11 @@ export default function Profile() {
   const [show2FAModal, setShow2FAModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loginHistory, setLoginHistory] = useState<any[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [logged, setLogged] = useState(false);
 
-  // Simulate server session fetching (since this is now a client component)
+  // Get session
   useEffect(() => {
     async function fetchSession() {
       const res = await fetch('/api/auth/session');
@@ -23,6 +24,22 @@ export default function Profile() {
       setTwoFactorEnabled(data?.user?.twoFactorEnabled || false);
     }
     fetchSession();
+  }, []);
+
+  // Get login history
+  useEffect(() => {
+    async function fetchHistory() {
+      setHistoryLoading(true);
+      try {
+        const res = await fetch('/api/profile/login-history');
+        const data = await res.json();
+        setLoginHistory(data || []);
+      } catch (err) {
+        console.error("Failed to fetch login history", err);
+      }
+      setHistoryLoading(false);
+    }
+    fetchHistory();
   }, []);
 
   const getAvatarColor = (name: string) => {
@@ -37,7 +54,6 @@ export default function Profile() {
   const handleEnable2FA = async () => {
     setLoading(true);
     setError(null);
-
     try {
       const response = await fetch('/api/profile/2fa/enable', {
         method: 'POST',
@@ -45,7 +61,6 @@ export default function Profile() {
         credentials: 'include',
       });
       const data = await response.json();
-
       if (response.ok && data.success) {
         setTwoFactorEnabled(true);
         setShow2FAModal(true);
@@ -59,6 +74,22 @@ export default function Profile() {
     }
   };
 
+  useEffect(() => {
+    if (session?.user?.id && !logged) {
+      fetch('/api/log-login', {
+        method: 'POST',
+        body: JSON.stringify({
+          userId: session.user.id,
+          action: 'signIn',
+        }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }).then(() => setLogged(true));
+    }
+  }, [session?.user?.id, logged]);
+
+
   const isCredentialsUser = session?.user?.provider === 'credentials';
 
   return (
@@ -68,7 +99,6 @@ export default function Profile() {
           {/* Dashboard Header */}
           <div className="bg-white rounded-xl shadow-md overflow-hidden mb-6">
             <div className="p-8 flex flex-col md:flex-row items-center">
-              {/* Avatar Section */}
               <div className="mb-6 md:mb-0 md:mr-8">
                 {session.user?.image ? (
                   <Image
@@ -84,8 +114,6 @@ export default function Profile() {
                   </div>
                 )}
               </div>
-              
-              {/* Welcome Section */}
               <div className="text-center md:text-left">
                 <h1 className="text-3xl font-bold text-gray-800 mb-2">
                   Welcome back, {session.user?.name}!
@@ -107,11 +135,11 @@ export default function Profile() {
 
           {/* Dashboard Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            {/* Account Security */}
             <div className="bg-white p-6 rounded-xl shadow-md">
               <h2 className="text-xl font-semibold text-gray-800 mb-4">Account Security</h2>
               <div className="space-y-4">
                 <Signout className="w-full px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors" />
-                
                 {isCredentialsUser && !twoFactorEnabled && (
                   <button
                     type="button"
@@ -126,23 +154,33 @@ export default function Profile() {
               </div>
             </div>
 
+            {/* Login History */}
             <div className="bg-white p-6 rounded-xl shadow-md">
-              <h2 className="text-xl font-semibold text-gray-800 mb-4">Quick Actions</h2>
-              <div className="space-y-3">
-                <button className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
-                  Edit Profile
-                </button>
-                <button className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
-                  Change Password
-                </button>
-                <button className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
-                  View Activity Log
-                </button>
-              </div>
+              <h2 className="text-xl font-semibold text-gray-800 mb-4">Login History</h2>
+              {historyLoading ? (
+                <div className="text-gray-600 text-sm">Loading login history...</div>
+              ) : loginHistory.length === 0 ? (
+                <div className="text-gray-600 text-sm">No login history yet.</div>
+              ) : (
+                <ul className="divide-y divide-gray-200 max-h-60 overflow-y-auto text-sm">
+                  {loginHistory.map((entry) => (
+                    <li key={entry.id} className="py-2 flex justify-between">
+                      <span>
+                        <strong>{entry.action}</strong> from
+                        <span className="ml-1 font-mono">{entry.device}</span>
+                        {entry.country && (
+                          <span className="ml-1 text-gray-400">({entry.country})</span>
+                        )}
+                      </span>
+                      <span className="text-gray-500">{new Date(entry.timestamp).toLocaleString()}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           </div>
 
-          {/* 2FA Confirmation Modal */}
+          {/* 2FA Modal */}
           <AnimatePresence>
             {show2FAModal && (
               <motion.div
@@ -154,7 +192,7 @@ export default function Profile() {
                 <motion.div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
                   <h2 className="text-lg font-semibold mb-4">Two-Factor Authentication Enabled</h2>
                   <p className="text-sm text-gray-600 mb-4">
-                    Two-factor authentication has been successfully enabled for your account. You'll now receive a 6-digit code via email when signing in.
+                    Two-factor authentication has been successfully enabled. You'll now receive a 6-digit code when signing in.
                   </p>
                   <div className="mt-4 flex justify-end">
                     <button

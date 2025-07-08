@@ -1,4 +1,4 @@
-import { db } from '@/app/lib/db';
+import { db } from '@/app/lib/prisma';
 
 export async function handleVerification(token: string) {
   const user = await db.user.findFirst({ where: { verificationToken: token } });
