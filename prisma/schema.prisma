@@ -14,14 +14,44 @@ datasource db {
 }
 
 model User {
-  id              String   @id
-  email           String   @unique
-  name            String?
-  password        String?
-  twoFactorSecret String?
-  twoFactorEnabled Boolean @default(false)
-  emailVerified   Boolean @default(false)
-  verificationToken String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                        String         @id
+  email                     String         @unique
+  name                      String?
+  password                  String?
+  twoFactorSecret           String?
+  twoFactorEnabled          Boolean        @default(false)
+  emailVerified             Boolean        @default(false)
+  verificationToken         String?
+  createdAt                 DateTime       @default(now())
+  updatedAt                 DateTime       @updatedAt
+  resetPasswordToken        String?
+  resetPasswordTokenExpiry  DateTime?
+  geoMapPermissions         Json?          @default("{\"read\": true, \"edit\": false, \"admin\": false}")
+  
+  loginHistory              LoginHistory[]
+  apiKeys                   ApiKey[]
+}
+
+model LoginHistory {
+  id          String   @id @default(uuid())
+  userId      String
+  action      String   // 'login', 'logout', 'geomap_access'
+  device      String?
+  country     String?
+  timestamp   DateTime @default(now())
+  
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ApiKey {
+  id          String    @id @default(uuid())
+  userId      String
+  keyHash     String
+  name        String
+  scopes      String[]  @default(["read"])
+  expiresAt   DateTime?
+  lastUsed    DateTime?
+  createdAt   DateTime  @default(now())
+  
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
