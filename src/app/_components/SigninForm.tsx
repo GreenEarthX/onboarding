@@ -14,6 +14,14 @@ export default function SigninForm({ email, password, setEmail, setPassword }: {
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotLoading, setForgotLoading] = useState(false);
 
+  // Get callbackUrl from search params if present
+  let callbackUrl = '/profile';
+  if (typeof window !== 'undefined') {
+    const urlParams = new URLSearchParams(window.location.search);
+    const cb = urlParams.get('callbackUrl');
+    if (cb) callbackUrl = cb;
+  }
+
   useEffect(() => {
     if (!email || !password) {
       setShow2FAModal(false);
@@ -31,7 +39,7 @@ export default function SigninForm({ email, password, setEmail, setPassword }: {
       redirect: false,
       email,
       password,
-      callbackUrl: '/profile',
+      callbackUrl,
     });
 
     setLoading(false);

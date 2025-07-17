@@ -158,27 +158,12 @@ export const authOptions: AuthOptions = {
       return session;
     },
     async signIn({ user, account, profile }) {
-      /*try {
-        // fallback if you cannot get req
-        const userAgent = globalThis.navigator?.userAgent || '';
-        const parser = new UAParserLib.UAParser(userAgent); 
-        const os = parser.getOS().name ?? 'unknown';
-        const browser = parser.getBrowser().name ?? 'unknown';
-        const device = `${os} - ${browser}`;
-
-        await db.loginHistory.create({
-          data: {
-            userId: user.id,
-            action: 'signIn',
-            timestamp: new Date(),
-            device,
-            country: 'unknown',  // still no IP
-          },
-        });
-      } catch (error) {
-        console.error('Error logging login history', error);
-      }*/
       return true;
+    },
+    async redirect({ url, baseUrl }) {
+      // Allow redirect to callbackUrl on localhost:3001
+      if (url.startsWith('http://localhost:3001')) return url;
+      return baseUrl;
     },
   },
   secret: process.env.NEXTAUTH_SECRET as string,
