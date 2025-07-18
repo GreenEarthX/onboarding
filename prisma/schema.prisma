@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -14,44 +8,41 @@ datasource db {
 }
 
 model User {
-  id                        String         @id
-  email                     String         @unique
-  name                      String?
-  password                  String?
-  twoFactorSecret           String?
-  twoFactorEnabled          Boolean        @default(false)
-  emailVerified             Boolean        @default(false)
-  verificationToken         String?
-  createdAt                 DateTime       @default(now())
-  updatedAt                 DateTime       @updatedAt
-  resetPasswordToken        String?
-  resetPasswordTokenExpiry  DateTime?
-  geoMapPermissions         Json?          @default("{\"read\": true, \"edit\": false, \"admin\": false}")
-  
-  loginHistory              LoginHistory[]
-  apiKeys                   ApiKey[]
+  id                       String         @id
+  email                    String         @unique
+  name                     String?
+  password                 String?
+  twoFactorSecret          String?
+  twoFactorEnabled         Boolean        @default(false)
+  emailVerified            Boolean        @default(false)
+  verificationToken        String?
+  createdAt                DateTime       @default(now())
+  updatedAt                DateTime       @updatedAt
+  resetPasswordToken       String?
+  resetPasswordTokenExpiry DateTime?
+  geoMapPermissions        Json?          @default("{\"edit\": false, \"read\": true, \"admin\": false}")
+  apiKeys                  ApiKey[]
+  loginHistory             LoginHistory[]
 }
 
 model LoginHistory {
-  id          String   @id @default(uuid())
-  userId      String
-  action      String   // 'login', 'logout', 'geomap_access'
-  device      String?
-  country     String?
-  timestamp   DateTime @default(now())
-  
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        String   @id @default(uuid())
+  userId    String
+  action    String
+  device    String?
+  country   String?
+  timestamp DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model ApiKey {
-  id          String    @id @default(uuid())
-  userId      String
-  keyHash     String
-  name        String
-  scopes      String[]  @default(["read"])
-  expiresAt   DateTime?
-  lastUsed    DateTime?
-  createdAt   DateTime  @default(now())
-  
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        String    @id @default(uuid())
+  userId    String
+  keyHash   String
+  name      String
+  scopes    String[]  @default(["read"])
+  expiresAt DateTime?
+  lastUsed  DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

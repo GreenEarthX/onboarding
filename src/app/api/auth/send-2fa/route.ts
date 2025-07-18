@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/app/lib/nextAuth';
+import { authOptions } from '@/app/lib/auth/nextAuth';
 import { handleSend2FA } from '@/services/auth/send2FAService';
 
 export async function POST(req: Request) {

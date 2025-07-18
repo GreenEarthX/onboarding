@@ -1,11 +1,12 @@
-import { AuthOptions, DefaultSession, User } from 'next-auth';
+import { AuthOptions, DefaultSession } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import GoogleProvider from 'next-auth/providers/google';
 import bcrypt from 'bcryptjs';
-import { db } from '@/app/lib/db';
+import { db } from '@/app/lib/prisma';
 import { v4 as uuid } from 'uuid';
-import { sendVerificationEmail } from '@/app/lib/email';
+import { sendVerificationEmail } from '@/app/lib/email/email';
 import speakeasy from 'speakeasy';
+import * as UAParserLib from 'ua-parser-js';
 
 declare module 'next-auth' {
   interface Session {
@@ -53,25 +54,20 @@ export const authOptions: AuthOptions = {
         name: { label: 'Name', type: 'text' },
         totp: { label: '2FA Code', type: 'text', required: false },
       },
-      async authorize(credentials, req) {
+      async authorize(credentials) {
         console.log('Authorize called with credentials:', credentials);
         if (!credentials?.email || !credentials?.password) {
-          console.log('Missing credentials:', { email: credentials?.email, password: credentials?.password });
           throw new Error('Missing email or password');
         }
 
         const user = await db.user.findUnique({
           where: { email: credentials.email },
-        }).catch(err => {
-          console.log('Database findUnique error:', err);
-          throw new Error('Database error');
         });
 
-        console.log('User found:', user);
         if (!user && credentials.name) {
+          // register new user
           const hashedPassword = await bcrypt.hash(credentials.password, 10);
           const verificationToken = uuid();
-          console.log('Generated verificationToken:', verificationToken);
           const newUser = await db.user.create({
             data: {
               id: uuid(),
@@ -83,27 +79,20 @@ export const authOptions: AuthOptions = {
               twoFactorEnabled: false,
               twoFactorSecret: null,
             },
-          }).catch(err => {
-            console.log('User creation error:', err);
-            throw new Error('User creation failed');
           });
           await sendVerificationEmail(credentials.email, verificationToken);
-          console.log('Verification email sent for new user:', newUser.email);
-          return null;
+          return null; // force user to verify first
         }
 
         if (!user || !user.password || !(await bcrypt.compare(credentials.password, user.password))) {
-          console.log('Invalid credentials check:', { user, password: user?.password });
           throw new Error('Invalid credentials');
         }
 
         if (!user.emailVerified) {
-          console.log('Email not verified for user:', user.email);
           throw new Error('Email not verified');
         }
 
         if (user.twoFactorEnabled && !credentials.totp) {
-          console.log('2FA required but no code provided for:', user.email);
           throw new Error('2FA code required');
         }
 
@@ -115,12 +104,10 @@ export const authOptions: AuthOptions = {
             window: 1,
           });
           if (!isValidTOTP) {
-            console.log('Invalid 2FA token for:', user.email);
             throw new Error('Invalid 2FA code');
           }
         }
 
-        console.log('User authenticated:', { id: user.id, email: user.email });
         return user;
       },
     }),
@@ -130,11 +117,11 @@ export const authOptions: AuthOptions = {
     maxAge: 60 * 60 * 24 * 30,
   },
   callbacks: {
-    async jwt({ token, user, account, profile }) {
-      console.log('JWT Callback:', { token, user, account, profile });
+    async jwt({ token, user, account }) {
       if (account?.provider) {
-        token.provider = account.provider; //  Track provider
+        token.provider = account.provider;
       }
+
       if (account?.provider === 'google' && user) {
         const existingUser = await db.user.findUnique({
           where: { email: user.email as string },
@@ -152,11 +139,9 @@ export const authOptions: AuthOptions = {
           });
           token.id = newUser.id;
           token.twoFactorEnabled = false;
-          console.log('New Google user created:', newUser.email);
         } else {
           token.id = existingUser.id;
           token.twoFactorEnabled = existingUser.twoFactorEnabled;
-          console.log('Existing user authenticated with Google:', existingUser.email);
         }
       } else if (user) {
         token.id = user.id;
@@ -165,13 +150,35 @@ export const authOptions: AuthOptions = {
       return token;
     },
     async session({ session, token }) {
-      console.log('Session Callback:', { session, token });
       if (token.id) {
         session.user.id = token.id;
         session.user.twoFactorEnabled = token.twoFactorEnabled;
-        session.user.provider = token.provider; // Track provider
+        session.user.provider = token.provider;
       }
       return session;
+    },
+    async signIn({ user, account, profile }) {
+      /*try {
+        // fallback if you cannot get req
+        const userAgent = globalThis.navigator?.userAgent || '';
+        const parser = new UAParserLib.UAParser(userAgent); 
+        const os = parser.getOS().name ?? 'unknown';
+        const browser = parser.getBrowser().name ?? 'unknown';
+        const device = `${os} - ${browser}`;
+
+        await db.loginHistory.create({
+          data: {
+            userId: user.id,
+            action: 'signIn',
+            timestamp: new Date(),
+            device,
+            country: 'unknown',  // still no IP
+          },
+        });
+      } catch (error) {
+        console.error('Error logging login history', error);
+      }*/
+      return true;
     },
   },
   secret: process.env.NEXTAUTH_SECRET as string,
