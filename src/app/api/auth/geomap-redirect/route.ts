@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/lib/nextAuth';
-import { generateGeoMapToken } from '@/app/lib/jwt';
-import { db } from '@/app/lib/db';
+import { authOptions } from '@/app/lib/auth/nextAuth';
+import { generateGeoMapTokenPair } from '@/app/lib/jwt';
+import { db } from '@/app/lib/prisma';
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,10 +12,11 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
     
     if (!session?.user?.email) {
-      // Redirect to signin with the original redirect URL
-      const signinUrl = new URL('/auth/signin', request.url);
+      // Redirect to signin with the original redirect URL, but add a flag to prevent loops
+      const signinUrl = new URL('/auth/authenticate', request.url);
       if (redirectUrl) {
         signinUrl.searchParams.set('redirect', redirectUrl);
+        signinUrl.searchParams.set('from_geomap_redirect', 'true');
       }
       return NextResponse.redirect(signinUrl);
     }
@@ -46,15 +47,16 @@ export async function GET(request: NextRequest) {
     }
 
     // Generate token and redirect back to geomap with token
-    const token = generateGeoMapToken(user);
+    const tokens = generateGeoMapTokenPair(user);
     
     if (redirectUrl) {
       const finalUrl = new URL(redirectUrl);
-      finalUrl.searchParams.set('token', token);
+      finalUrl.searchParams.set('token', tokens.accessToken);
+      finalUrl.searchParams.set('refresh_token', tokens.refreshToken);
       return NextResponse.redirect(finalUrl.toString());
     } else {
       // Default redirect to geomap
-      const defaultUrl = `${process.env.GEOMAP_APP_URL || 'http://localhost:3001'}?token=${token}`;
+      const defaultUrl = `${process.env.GEOMAP_APP_URL || 'http://localhost:3001'}?token=${tokens.accessToken}&refresh_token=${tokens.refreshToken}`;
       return NextResponse.redirect(defaultUrl);
     }
   } catch (error) {

@@ -7,6 +7,7 @@ export default function VerifyPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const token = searchParams.get('token');
+  const redirectUrl = searchParams.get('redirect');
   const [verified, setVerified] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,7 +40,14 @@ export default function VerifyPage() {
             setVerified(true);
             // Delay redirect to show success animation
             setTimeout(() => {
-              router.push('/auth/authenticate?verified=true');
+              if (redirectUrl) {
+                // If there's a redirect URL, use the geomap-redirect endpoint
+                const geomapRedirectUrl = `/api/auth/geomap-redirect?redirect=${encodeURIComponent(redirectUrl)}`;
+                window.location.href = geomapRedirectUrl;
+              } else {
+                // Default redirect to authenticate page
+                router.push('/auth/authenticate?verified=true');
+              }
             }, 2000); // 2-second delay for animation
           } else {
             throw new Error(data.error || 'Verification failed');
@@ -69,7 +77,12 @@ export default function VerifyPage() {
             <h2 className="text-xl font-semibold text-red-600 mb-4">Verification Failed</h2>
             <p className="text-gray-600 mb-4">{error}</p>
             <button
-              onClick={() => router.push('/auth/authenticate')}
+              onClick={() => {
+                const returnUrl = redirectUrl 
+                  ? `/auth/authenticate?redirect=${encodeURIComponent(redirectUrl)}`
+                  : '/auth/authenticate';
+                router.push(returnUrl);
+              }}
               className="py-2 px-4 bg-gradient-to-r from-[#0072BC] to-[#00B140] text-white rounded-lg hover:from-[#005f9e] hover:to-[#009933] transition-colors"
             >
               Return to Sign In

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/lib/nextAuth';
-import { generateGeoMapToken } from '@/app/lib/jwt';
-import { db } from '@/app/lib/db';
+import { authOptions } from '@/app/lib/auth/nextAuth';
+import { generateGeoMapTokenPair } from '@/app/lib/jwt';
+import { db } from '@/app/lib/prisma';
 
 export async function POST(request: NextRequest) {
   try {
@@ -28,11 +28,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const token = generateGeoMapToken(user);
+    const tokens = generateGeoMapTokenPair(user);
     
     return NextResponse.json({ 
-      token,
-      expiresIn: '24h',
+      ...tokens,
       redirectUrl: process.env.GEOMAP_APP_URL || 'http://localhost:3001',
       user: {
         id: user.id,
