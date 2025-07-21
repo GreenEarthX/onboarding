@@ -1,6 +1,7 @@
 'use client'
 
 import { signIn } from 'next-auth/react'
+import { useSearchParams } from 'next/navigation'
 import { FaGoogle, FaApple } from 'react-icons/fa'
 import React from 'react'
 
@@ -19,10 +20,16 @@ const providerLabels = {
 }
 
 const OAuthButton = ({ provider }: OAuthButtonProps) => {
+  const searchParams = useSearchParams();
+  const redirectUrl = searchParams.get('redirect');
+  
+  // Determine the callback URL based on redirect parameter
+  const callbackUrl = redirectUrl ? `/api/auth/geomap-redirect?redirect=${encodeURIComponent(redirectUrl)}` : '/profile';
+
   return (
     <button
       onClick={() =>
-        signIn(provider, { redirect: true, callbackUrl: '/profile' })
+        signIn(provider, { redirect: true, callbackUrl })
       }
       className={`w-full flex items-center justify-center space-x-2 ${
         provider === 'google'
