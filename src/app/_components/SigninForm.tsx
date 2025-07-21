@@ -1,10 +1,13 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import { FaEnvelope, FaLock } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function SigninForm({ email, password, setEmail, setPassword }: { email: string; password: string; setEmail: (value: string) => void; setPassword: (value: string) => void }) {
+  const searchParams = useSearchParams();
+  const redirectUrl = searchParams.get('redirect');
   const [totp, setTotp] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -27,11 +30,14 @@ export default function SigninForm({ email, password, setEmail, setPassword }: {
     setLoading(true);
     setError(null);
 
+    // Determine the callback URL based on redirect parameter
+    const callbackUrl = redirectUrl ? `/api/auth/geomap-redirect?redirect=${encodeURIComponent(redirectUrl)}` : '/profile';
+
     const result = await signIn('credentials', {
       redirect: false,
       email,
       password,
-      callbackUrl: '/profile',
+      callbackUrl,
     });
 
     setLoading(false);
@@ -70,12 +76,15 @@ export default function SigninForm({ email, password, setEmail, setPassword }: {
     setLoading(true);
     setError(null);
 
+    // Determine the callback URL based on redirect parameter
+    const callbackUrl = redirectUrl ? `/api/auth/geomap-redirect?redirect=${encodeURIComponent(redirectUrl)}` : '/profile';
+
     const result = await signIn('credentials', {
       redirect: false,
       email,
       password,
       totp,
-      callbackUrl: '/profile',
+      callbackUrl,
     });
 
     setLoading(false);
