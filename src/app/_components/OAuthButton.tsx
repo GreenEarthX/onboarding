@@ -24,21 +24,24 @@ const OAuthButton = ({ provider }: OAuthButtonProps) => {
   const redirectUrl = searchParams.get('redirect');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   const handleOAuthSignIn = async () => {
     try {
       setIsLoading(true);
       setError(null);
-      
-      // Store redirect URL in localStorage before OAuth (since OAuth does a full redirect)
-      if (redirectUrl && typeof window !== 'undefined') {
-        localStorage.setItem('geomap-oauth-redirect', redirectUrl);
+
+      // Pass the redirect param to the custom OAuth callback handler (absolute URL)
+      let callbackUrl = `${window.location.origin}/api/auth/geomap-redirect-oauth`;
+      let state;
+      if (redirectUrl) {
+        callbackUrl += '?redirect=' + encodeURIComponent(redirectUrl);
+        state = JSON.stringify({ redirect: redirectUrl });
       }
-      
-      // Use a simple callback URL for OAuth - we'll handle the redirect after
-      await signIn(provider, { 
-        redirect: true, 
-        callbackUrl: '/api/auth/geomap-redirect-oauth'
+
+      await signIn(provider, {
+        redirect: true,
+        callbackUrl,
+        ...(state ? { state } : {})
       });
     } catch (error) {
       console.error('OAuth sign-in error:', error);

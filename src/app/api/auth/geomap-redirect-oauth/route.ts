@@ -34,10 +34,21 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(new URL('/auth/verify', request.url));
     }
 
-    // Generate token and create a page that checks localStorage for redirect
+    // Generate token and create a page that redirects using the query param or state param
     const tokens = generateGeoMapTokenPair(user);
-    
-    // Create an HTML page that checks localStorage and redirects
+    let redirectParam = request.nextUrl.searchParams.get('redirect');
+    // Try to get redirect from state param if not present
+    if (!redirectParam) {
+      const stateParam = request.nextUrl.searchParams.get('state');
+      if (stateParam) {
+        try {
+          const stateObj = JSON.parse(stateParam);
+          if (stateObj && stateObj.redirect) {
+            redirectParam = stateObj.redirect;
+          }
+        } catch (e) {}
+      }
+    }
     const html = `
 <!DOCTYPE html>
 <html>
@@ -50,23 +61,19 @@ export async function GET(request: NextRequest) {
         <p>Redirecting you to your destination...</p>
     </div>
     <script>
-        // Check localStorage for redirect URL
-        const redirectUrl = localStorage.getItem('geomap-oauth-redirect');
-        localStorage.removeItem('geomap-oauth-redirect');
-        
         const accessToken = '${tokens.accessToken}';
         const refreshToken = '${tokens.refreshToken}';
-        
-        if (redirectUrl) {
-            // Redirect to the stored URL with tokens
-            const finalUrl = new URL(redirectUrl);
-            finalUrl.searchParams.set('token', accessToken);
-            finalUrl.searchParams.set('refresh_token', refreshToken);
-            window.location.href = finalUrl.toString();
-        } else {
-            // Default redirect to geomap
-            const defaultUrl = '${process.env.GEOMAP_APP_URL || 'http://localhost:3001'}?token=' + accessToken + '&refresh_token=' + refreshToken;
-            window.location.href = defaultUrl;
+        let finalUrl = '${process.env.GEOMAP_APP_URL || 'http://localhost:3001'}';
+        if (${Boolean('' + '${redirectParam}')} && '${redirectParam}' !== 'null') {
+          finalUrl = decodeURIComponent('${redirectParam}');
+        }
+        try {
+          const urlObj = new URL(finalUrl);
+          urlObj.searchParams.set('token', accessToken);
+          urlObj.searchParams.set('refresh_token', refreshToken);
+          window.location.href = urlObj.toString();
+        } catch (e) {
+          window.location.href = finalUrl;
         }
     </script>
 </body>

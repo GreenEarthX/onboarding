@@ -7,10 +7,14 @@ interface SignoutProps {
 }
 
 const Signout = ({ className }: SignoutProps) => {
+  const handleSignOut = () => {
+    const fullUrl = window.location.origin + window.location.pathname + window.location.search;
+    signOut({ callbackUrl: fullUrl });
+  };
   return (
     <button
       type='button'
-      onClick={() => { signOut() }}
+      onClick={handleSignOut}
       className={`${className} text-sm text-blue hover:text-emerald-200 transition-colors`}
       >
         Sign Out

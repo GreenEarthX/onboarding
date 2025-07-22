@@ -161,9 +161,13 @@ export const authOptions: AuthOptions = {
       return true;
     },
     async redirect({ url, baseUrl }) {
-      // Allow redirect to callbackUrl on geomap domain
-      const geomapUrl = process.env.NEXT_PUBLIC_GEOMAP_URL || process.env.GEOMAP_URL || 'http://localhost:3001';
-      if (url.startsWith(geomapUrl)) return url;
+      // Allow redirect to callbackUrl on localhost:3001 or to custom handler
+      if (
+        url.startsWith('http://localhost:3001') ||
+        url.startsWith('http://localhost:3000/api/auth/geomap-redirect-oauth')
+      ) {
+        return url;
+      }
       return baseUrl;
     },
   },
