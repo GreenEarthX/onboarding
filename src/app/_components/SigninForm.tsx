@@ -39,13 +39,19 @@ export default function SigninForm({ email, password, setEmail, setPassword }: {
     setError(null);
 
     // Determine the callback URL based on redirect parameter
-    const callbackUrl = redirectUrl ? `/api/auth/geomap-redirect?redirect=${encodeURIComponent(redirectUrl)}` : '/profile';
+    let callbackUrl;
+    if (redirectUrl) {
+      // If there's a redirect URL, go directly to geomap-redirect which will handle the token and redirect
+      callbackUrl = `/api/auth/geomap-redirect?redirect=${encodeURIComponent(redirectUrl)}`;
+    } else {
+      // Normal login - redirect directly to geomap homepage, not profile
+      callbackUrl = `/api/auth/geomap-redirect`;
+    }
 
     const result = await signIn('credentials', {
-      redirect: false,
+      redirect: false, // NEVER let NextAuth handle redirects
       email,
       password,
-      callbackUrl,
     });
 
     setLoading(false);
@@ -73,8 +79,15 @@ export default function SigninForm({ email, password, setEmail, setPassword }: {
       } else {
         setError(result.error);
       }
-    } else if (result?.url) {
-      window.location.href = result.url;
+    } else if (result?.ok) {
+      // Login successful - MANUALLY handle the redirect
+      if (redirectUrl) {
+        console.log('Redirecting to form:', redirectUrl);
+        window.location.href = `/api/auth/geomap-redirect?redirect=${encodeURIComponent(redirectUrl)}`;
+      } else {
+        console.log('Redirecting to geomap homepage');
+        window.location.href = `/api/auth/geomap-redirect`;
+      }
     } else {
       setError('Sign-in failed. Please try again or contact support.');
     }
@@ -84,15 +97,11 @@ export default function SigninForm({ email, password, setEmail, setPassword }: {
     setLoading(true);
     setError(null);
 
-    // Determine the callback URL based on redirect parameter
-    const callbackUrl = redirectUrl ? `/api/auth/geomap-redirect?redirect=${encodeURIComponent(redirectUrl)}` : '/profile';
-
     const result = await signIn('credentials', {
-      redirect: false,
+      redirect: false, // NEVER let NextAuth handle redirects
       email,
       password,
       totp,
-      callbackUrl,
     });
 
     setLoading(false);
@@ -101,9 +110,16 @@ export default function SigninForm({ email, password, setEmail, setPassword }: {
 
     if (result?.error) {
       setError(result.error);
-    } else if (result?.url) {
+    } else if (result?.ok) {
       setShow2FAModal(false);
-      window.location.href = result.url;
+      // Login successful - MANUALLY handle the redirect
+      if (redirectUrl) {
+        console.log('2FA success - Redirecting to form:', redirectUrl);
+        window.location.href = `/api/auth/geomap-redirect?redirect=${encodeURIComponent(redirectUrl)}`;
+      } else {
+        console.log('2FA success - Redirecting to geomap homepage');
+        window.location.href = `/api/auth/geomap-redirect`;
+      }
     } else {
       setError('2FA verification failed. Please try again.');
     }
