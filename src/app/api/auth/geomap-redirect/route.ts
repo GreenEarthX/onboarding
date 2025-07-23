@@ -4,11 +4,15 @@ import { authOptions } from '@/app/lib/auth/nextAuth';
 import { generateGeoMapTokenPair } from '@/app/lib/jwt';
 import { db } from '@/app/lib/prisma';
 
+
+  
+const GEOMAP_APP_URL = process.env.GEOMAP_APP_URL || 'http://localhost:3001';
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const redirectUrl = searchParams.get('redirect');
-    
+
     const session = await getServerSession(authOptions);
     
     if (!session?.user?.email) {

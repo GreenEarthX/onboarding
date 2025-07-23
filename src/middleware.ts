@@ -22,7 +22,11 @@ export default withAuth(
        // Check if there's a redirect parameter for cross-app navigation
        const redirectParam = request.nextUrl.searchParams.get('redirect');
        
-       if (redirectParam && redirectParam.includes('localhost:3001')) {
+       // Get geomap URL from environment variables
+       const geomapUrl = process.env.NEXT_PUBLIC_GEOMAP_URL || process.env.GEOMAP_URL || 'http://localhost:3001';
+       const geomapDomain = new URL(geomapUrl).host;
+       
+       if (redirectParam && redirectParam.includes(geomapDomain)) {
            // Allow access to auth page for cross-app navigation, then redirect through geomap-redirect
            return NextResponse.redirect(new URL(`/api/auth/geomap-redirect?redirect=${encodeURIComponent(redirectParam)}`, request.url));
        } else {
