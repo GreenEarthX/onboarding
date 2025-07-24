@@ -4,6 +4,7 @@ const nextConfig = {
   images: {
     domains: ['lh3.googleusercontent.com'],
   },
+  output: 'standalone', // Enable standalone output for Docker optimization
 };
 
 module.exports = nextConfig;
