@@ -1,8 +1,8 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, Suspense } from "react";
 import { useSearchParams, usePathname } from "next/navigation";
 
-export default function CustomSignOut() {
+function SignoutContent() {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const callbackUrl = searchParams.get("callbackUrl");
@@ -32,5 +32,13 @@ export default function CustomSignOut() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function CustomSignOut() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+      <SignoutContent />
+    </Suspense>
   );
 }

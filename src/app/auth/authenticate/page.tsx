@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import AuthTabs from '@/app/_components/AuthTabs';
 import SigninForm from '@/app/_components/SigninForm';
@@ -7,7 +7,7 @@ import SignupForm from '@/app/_components/SignupForm';
 import SocialAuthButtons from '@/app/_components/SocialAuthButtons';
 import Image from 'next/image';
 
-export default function SigninPage() {
+function AuthenticateContent() {
   const [activeTab, setActiveTab] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
@@ -76,5 +76,13 @@ export default function SigninPage() {
         </div>
       </motion.div>
     </div>
+  );
+}
+
+export default function SigninPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+      <AuthenticateContent />
+    </Suspense>
   );
 }

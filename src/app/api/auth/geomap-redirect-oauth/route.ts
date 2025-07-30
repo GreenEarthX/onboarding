@@ -4,6 +4,8 @@ import { authOptions } from '@/app/lib/auth/nextAuth';
 import { generateGeoMapTokenPair } from '@/app/lib/jwt';
 import { db } from '@/app/lib/prisma';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

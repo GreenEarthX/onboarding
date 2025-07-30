@@ -4,6 +4,8 @@ import { authOptions } from '@/app/lib/auth/nextAuth';
 import { generateGeoMapTokenPair } from '@/app/lib/jwt';
 import { db } from '@/app/lib/prisma';
 
+export const dynamic = 'force-dynamic';
+
 
   
 const GEOMAP_APP_URL = process.env.GEOMAP_APP_URL || 'http://localhost:3001';
