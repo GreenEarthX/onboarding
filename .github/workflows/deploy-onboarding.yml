@@ -1,0 +1,79 @@
+name: Deploy Onboarding App
+
+on:
+  push:
+    branches: [main]
+    paths: 
+      - 'src/**'
+      - 'public/**'
+      - 'package.json'
+      - 'Dockerfile'
+      - 'prisma/**'
+      - '.github/workflows/deploy-onboarding.yml'
+
+  workflow_dispatch:
+
+env:
+  AWS_REGION: us-west-1
+  ECR_REPOSITORY: onboarding-app
+  ECS_SERVICE: onboarding-service
+  ECS_CLUSTER: onboarding-cluster
+
+jobs:
+  deploy:
+    name: Build and Deploy App
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Generate Prisma Client
+      run: npx prisma generate
+
+    - name: Build Next.js application
+      run: npm run build
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+
+    - name: Build, tag, and push Docker image
+      id: build-image
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        IMAGE_TAG: ${{ github.sha }}
+      run: |
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+    - name: Update ECS Service
+      run: |
+        aws ecs update-service \
+          --cluster ${{ env.ECS_CLUSTER }} \
+          --service ${{ env.ECS_SERVICE }} \
+          --force-new-deployment \
+          --region ${{ env.AWS_REGION }}
+        
+        aws ecs wait services-stable \
+          --cluster ${{ env.ECS_CLUSTER }} \
+          --services ${{ env.ECS_SERVICE }} \
+          --region ${{ env.AWS_REGION }}

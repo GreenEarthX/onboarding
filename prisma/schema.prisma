@@ -8,7 +8,6 @@ datasource db {
 }
 
 model User {
-<<<<<<< HEAD
   id                        String         @id
   email                     String         @unique
   name                      String?
@@ -50,29 +49,3 @@ model ApiKey {
   
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
-=======
-  id                    String         @id
-  email                 String         @unique
-  name                  String?
-  password              String?
-  twoFactorSecret       String?
-  twoFactorEnabled      Boolean        @default(false)
-  emailVerified         Boolean        @default(false)
-  verificationToken     String?
-  resetPasswordToken    String?        // Field for password reset token
-  resetPasswordTokenExpiry DateTime?   // Field for token expiry
-  createdAt             DateTime       @default(now())
-  updatedAt             DateTime       @updatedAt
-  loginHistory          LoginHistory[] @relation("UserToLoginHistory")
-}
-
-model LoginHistory {
-  id        String   @id @default(uuid())
-  userId    String
-  action    String
-  device    String?
-  country   String?
-  timestamp DateTime @default(now())
-  user      User     @relation("UserToLoginHistory", fields: [userId], references: [id])
-}
->>>>>>> 67d1c6d0ee34aa248b02a2f3693f7a2c3e685e15
