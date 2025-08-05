@@ -1,5 +1,4 @@
-# .github/workflows/deploy-geomap.yml
-name: Deploy Geomap App
+name: Deploy Onboarding App
 
 on:
   push:
@@ -9,20 +8,20 @@ on:
       - 'public/**'
       - 'package.json'
       - 'Dockerfile'
-      - '.github/workflows/deploy-geomap.yml'
+      - 'prisma/**'
+      - '.github/workflows/deploy-onboarding.yml'
 
   workflow_dispatch:
 
 env:
   AWS_REGION: us-west-1
-  ECR_REPOSITORY: geomap-app
-  ECS_SERVICE: geomap-service
-  ECS_CLUSTER: geomap-cluster
-  ECS_TASK_DEFINITION: geomap-task
+  ECR_REPOSITORY: onboarding-app
+  ECS_SERVICE: onboarding-service
+  ECS_CLUSTER: onboarding-cluster
 
 jobs:
   deploy:
-    name: Deploy
+    name: Build and Deploy App
     runs-on: ubuntu-latest
     environment: production
 
@@ -39,8 +38,16 @@ jobs:
     - name: Install dependencies
       run: npm ci
 
+    - name: Generate Prisma Client
+      run: npx prisma generate
+
     - name: Build Next.js application
-      run: npm run build
+      run: |
+        npm run build
+        if [ $? -ne 0 ]; then
+          echo "Build failed, stopping deployment"
+          exit 1
+        fi
 
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v4
@@ -53,21 +60,18 @@ jobs:
       id: login-ecr
       uses: aws-actions/amazon-ecr-login@v2
 
-    - name: Build, tag, and push image to Amazon ECR
+    - name: Build, tag, and push Docker image
       id: build-image
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         IMAGE_TAG: latest
       run: |
-        # Build a docker container and push it to ECR so that it can
-        # be deployed to ECS.
         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
         echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
-    - name: Force ECS service update
+    - name: Update ECS Service
       run: |
-        # Force ECS service to pull the latest image by updating the service
         aws ecs update-service \
           --cluster ${{ env.ECS_CLUSTER }} \
           --service ${{ env.ECS_SERVICE }} \
