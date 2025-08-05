@@ -161,10 +161,13 @@ export const authOptions: AuthOptions = {
       return true;
     },
     async redirect({ url, baseUrl }) {
-      // Allow redirect to callbackUrl on localhost:3001 or to custom handler
+      // Allow redirect to callbackUrl on localhost or ALB for development/production
       if (
         url.startsWith('http://localhost:3001') ||
-        url.startsWith('http://localhost:3000/api/auth/geomap-redirect-oauth')
+        url.startsWith('http://localhost:3000') ||
+        url.startsWith('http://onboarding-alb-') ||
+        url.startsWith('http://geomap-alb-') ||
+        url.startsWith(baseUrl)
       ) {
         return url;
       }

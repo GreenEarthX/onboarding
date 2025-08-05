@@ -23,7 +23,7 @@ export default withAuth(
        const redirectParam = request.nextUrl.searchParams.get('redirect');
        
        // Get geomap URL from environment variables
-       const geomapUrl = process.env.NEXT_PUBLIC_GEOMAP_URL || process.env.GEOMAP_URL || 'http://localhost:3001';
+       const geomapUrl = process.env.GEOMAP_URL || 'http://localhost:3001';
        const geomapDomain = new URL(geomapUrl).host;
        
        if (redirectParam && redirectParam.includes(geomapDomain)) {
