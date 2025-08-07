@@ -167,6 +167,8 @@ export const authOptions: AuthOptions = {
         url.startsWith('http://localhost:3000') ||
         url.startsWith('http://onboarding-alb-') ||
         url.startsWith('http://geomap-alb-') ||
+        url.startsWith('https://geomap.greenearthx.io') ||
+        url.startsWith('https://auth.greenearthx.io') ||
         url.startsWith(baseUrl)
       ) {
         return url;
