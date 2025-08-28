@@ -7,6 +7,7 @@ export interface GeoMapTokenPayload {
   permissions: string[];
   name?: string;
   type?: 'access' | 'refresh';
+  role?: string;
 }
 
 export interface TokenPair {
@@ -21,7 +22,8 @@ export function generateGeoMapTokenPair(user: any): TokenPair {
     email: user.email,
     verified: user.emailVerified || false,
     permissions: user.emailVerified ? ['read', 'edit'] : ['read'],
-    name: user.name
+    name: user.name,
+    role: user.role || 'user'
   };
   
   const accessToken = jwt.sign(
@@ -59,7 +61,8 @@ export function generateGeoMapToken(user: any): string {
     verified: user.emailVerified || false,
     permissions: user.emailVerified ? ['read', 'edit'] : ['read'],
     name: user.name,
-    type: 'access'
+    type: 'access',
+    role: user.role || 'user'
   };
   
   return jwt.sign(payload, process.env.GEOMAP_JWT_SECRET!, {
