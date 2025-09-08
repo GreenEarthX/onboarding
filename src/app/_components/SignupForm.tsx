@@ -1,6 +1,5 @@
 'use client';
 import { useState, FormEvent } from 'react';
-import { signIn } from 'next-auth/react';
 import { FaEnvelope, FaLock, FaUser } from 'react-icons/fa';
 import ReCAPTCHA from 'react-google-recaptcha';
 
@@ -25,6 +24,32 @@ export default function SignupForm({
   const [loading, setLoading] = useState<boolean>(false);
   const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
 
+  // Password validation function
+  const validatePassword = (password: string) => {
+    const minLength = 8;
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasNumber = /\d/.test(password);
+    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+
+    if (password.length < minLength) {
+      return 'Password must be at least 8 characters long.';
+    }
+    if (!hasUpperCase) {
+      return 'Password must contain at least one uppercase letter.';
+    }
+    if (!hasLowerCase) {
+      return 'Password must contain at least one lowercase letter.';
+    }
+    if (!hasNumber) {
+      return 'Password must contain at least one number.';
+    }
+    if (!hasSpecialChar) {
+      return 'Password must contain at least one special character (e.g., !@#$%).';
+    }
+    return '';
+  };
+
   const handleRecaptchaChange = (token: string | null) => {
     setRecaptchaToken(token);
   };
@@ -33,6 +58,14 @@ export default function SignupForm({
     e.preventDefault();
     setLoading(true);
     setError('');
+
+    // Validate password before submission
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      setError(passwordError);
+      setLoading(false);
+      return;
+    }
 
     if (!recaptchaToken) {
       setError('Please complete the reCAPTCHA verification.');
@@ -116,6 +149,9 @@ export default function SignupForm({
             placeholder="••••••••"
             required
           />
+        </div>
+        <div className="text-sm text-gray-500 mt-1">
+          Password must be at least 8 characters long and include at least one uppercase letter, one lowercase letter, one number, and one special character.
         </div>
       </div>
       <div className="flex justify-center">
