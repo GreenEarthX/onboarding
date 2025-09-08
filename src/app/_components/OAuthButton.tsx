@@ -2,21 +2,23 @@
 
 import { signIn } from 'next-auth/react'
 import { useSearchParams } from 'next/navigation'
-import { FaGoogle, FaApple } from 'react-icons/fa'
+import { FaGoogle, FaApple, FaMicrosoft } from 'react-icons/fa'
 import React, { useState } from 'react'
 
 type OAuthButtonProps = {
-  provider: 'google' | 'apple' 
+  provider: 'google' | 'apple' | 'azure-ad'
 }
 
 const providerIcons = {
   google: <FaGoogle />,
-  apple: <FaApple />, 
+  apple: <FaApple />,
+  'azure-ad': <FaMicrosoft />,
 }
 
 const providerLabels = {
   google: 'Google',
   apple: 'Apple',
+  'azure-ad': 'Microsoft',
 }
 
 const OAuthButton = ({ provider }: OAuthButtonProps) => {
@@ -30,7 +32,6 @@ const OAuthButton = ({ provider }: OAuthButtonProps) => {
       setIsLoading(true);
       setError(null);
 
-      // Pass the redirect param to the custom OAuth callback handler (absolute URL)
       let callbackUrl = `${window.location.origin}/api/auth/geomap-redirect-oauth`;
       let state;
       if (redirectUrl) {
@@ -59,7 +60,9 @@ const OAuthButton = ({ provider }: OAuthButtonProps) => {
           provider === 'google'
             ? 'bg-red-600 hover:bg-red-700'
             : provider === 'apple'
-            ? 'bg-black hover:bg-gray-800' 
+            ? 'bg-black hover:bg-gray-800'
+            : provider === 'azure-ad'
+            ? 'bg-blue-600 hover:bg-blue-700'
             : 'bg-gray-800 hover:bg-gray-700'
         } text-white rounded-lg py-2 px-4 transition-colors disabled:opacity-50`}
       >

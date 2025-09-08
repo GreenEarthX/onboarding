@@ -1,12 +1,14 @@
 import { AuthOptions, DefaultSession } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import GoogleProvider from 'next-auth/providers/google';
+import AzureADProvider from 'next-auth/providers/azure-ad';
 import bcrypt from 'bcryptjs';
 import { db } from '@/app/lib/prisma';
 import { v4 as uuid } from 'uuid';
 import { sendVerificationEmail } from '@/app/lib/email/email';
 import speakeasy from 'speakeasy';
-import * as UAParserLib from 'ua-parser-js';
+
+// Extend NextAuth types
 
 declare module 'next-auth' {
   interface Session {
@@ -46,6 +48,11 @@ export const authOptions: AuthOptions = {
       clientId: process.env.GOOGLE_CLIENT_ID as string,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
     }),
+    AzureADProvider({
+      clientId: process.env.MICROSOFT_CLIENT_ID as string,
+      clientSecret: process.env.MICROSOFT_CLIENT_SECRET as string,
+      tenantId: process.env.MICROSOFT_TENANT_ID as string,
+    }),
     CredentialsProvider({
       name: 'Credentials',
       credentials: {
@@ -55,7 +62,6 @@ export const authOptions: AuthOptions = {
         totp: { label: '2FA Code', type: 'text', required: false },
       },
       async authorize(credentials) {
-        console.log('Authorize called with credentials:', credentials);
         if (!credentials?.email || !credentials?.password) {
           throw new Error('Missing email or password');
         }
@@ -65,7 +71,7 @@ export const authOptions: AuthOptions = {
         });
 
         if (!user && credentials.name) {
-          // register new user
+          // Register new user
           const hashedPassword = await bcrypt.hash(credentials.password, 10);
           const verificationToken = uuid();
           const newUser = await db.user.create({
@@ -81,7 +87,7 @@ export const authOptions: AuthOptions = {
             },
           });
           await sendVerificationEmail(credentials.email, verificationToken);
-          return null; // force user to verify first
+          return null; // must verify before login
         }
 
         if (!user || !user.password || !(await bcrypt.compare(credentials.password, user.password))) {
@@ -122,10 +128,11 @@ export const authOptions: AuthOptions = {
         token.provider = account.provider;
       }
 
-      if (account?.provider === 'google' && user) {
+      if ((account?.provider === 'google' || account?.provider === 'azure-ad') && user) {
         const existingUser = await db.user.findUnique({
           where: { email: user.email as string },
         });
+
         if (!existingUser) {
           const newUser = await db.user.create({
             data: {
@@ -147,6 +154,7 @@ export const authOptions: AuthOptions = {
         token.id = user.id;
         token.twoFactorEnabled = user.twoFactorEnabled;
       }
+
       return token;
     },
     async session({ session, token }) {
@@ -157,16 +165,13 @@ export const authOptions: AuthOptions = {
       }
       return session;
     },
-    async signIn({ user, account, profile }) {
+    async signIn() {
       return true;
     },
     async redirect({ url, baseUrl }) {
-      // Allow redirect to callbackUrl on localhost or ALB for development/production
       if (
         url.startsWith('http://localhost:3001') ||
         url.startsWith('http://localhost:3000') ||
-        url.startsWith('http://onboarding-alb-') ||
-        url.startsWith('http://geomap-alb-') ||
         url.startsWith('https://geomap.greenearthx.io') ||
         url.startsWith('https://auth.greenearthx.io') ||
         url.startsWith(baseUrl)
