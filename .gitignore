@@ -42,3 +42,6 @@ next-env.d.ts
 
 /src/generated/prisma
 .cert/
+
+gex_postgresql_data
+.idea
