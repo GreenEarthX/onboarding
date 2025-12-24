@@ -42,6 +42,9 @@ declare module 'next-auth/jwt' {
   }
 }
 
+const isProd = process.env.NODE_ENV === 'production';
+const cookieDomain = process.env.NEXTAUTH_COOKIE_DOMAIN;
+
 export const authOptions: AuthOptions = {
   providers: [
     GoogleProvider({
@@ -121,6 +124,19 @@ export const authOptions: AuthOptions = {
   session: {
     strategy: 'jwt',
     maxAge: 60 * 60 * 24 * 30,
+  },
+  useSecureCookies: isProd,
+  cookies: {
+    sessionToken: {
+      name: `${isProd ? '__Secure-' : ''}next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: isProd,
+        ...(cookieDomain ? { domain: cookieDomain } : {}),
+      },
+    },
   },
   callbacks: {
     async jwt({ token, user, account }) {
