@@ -6,6 +6,7 @@ import bcrypt from 'bcryptjs';
 import { db } from '@/app/lib/prisma';
 import { v4 as uuid } from 'uuid';
 import { sendVerificationEmail } from '@/app/lib/email/email';
+import { upsertCertificationUser, upsertCert2User } from '@/app/lib/user-provisioning';
 import speakeasy from 'speakeasy';
 
 // Extend NextAuth types
@@ -42,6 +43,9 @@ declare module 'next-auth/jwt' {
   }
 }
 
+const isProd = process.env.NODE_ENV === 'production';
+const cookieDomain = process.env.NEXTAUTH_COOKIE_DOMAIN;
+
 export const authOptions: AuthOptions = {
   providers: [
     GoogleProvider({
@@ -74,9 +78,10 @@ export const authOptions: AuthOptions = {
           // Register new user
           const hashedPassword = await bcrypt.hash(credentials.password, 10);
           const verificationToken = uuid();
-          const newUser = await db.user.create({
+          const userId = uuid();
+          await db.user.create({
             data: {
-              id: uuid(),
+              id: userId,
               email: credentials.email,
               name: credentials.name,
               password: hashedPassword,
@@ -86,6 +91,14 @@ export const authOptions: AuthOptions = {
               twoFactorSecret: null,
             },
           });
+          try {
+            await upsertCertificationUser({ email: credentials.email, name: credentials.name, authId: userId });
+            await upsertCert2User({ email: credentials.email, name: credentials.name, authId: userId });
+          } catch (err) {
+            console.error('Provisioning to certification/cert2 failed:', err);
+            await db.user.delete({ where: { id: userId } }).catch(() => null);
+            throw new Error('Signup failed while provisioning accounts. Please try again.');
+          }
           await sendVerificationEmail(credentials.email, verificationToken);
           return null; // must verify before login
         }
@@ -122,6 +135,19 @@ export const authOptions: AuthOptions = {
     strategy: 'jwt',
     maxAge: 60 * 60 * 24 * 30,
   },
+  useSecureCookies: isProd,
+  cookies: {
+    sessionToken: {
+      name: `${isProd ? '__Secure-' : ''}next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: isProd,
+        ...(cookieDomain ? { domain: cookieDomain } : {}),
+      },
+    },
+  },
   callbacks: {
     async jwt({ token, user, account }) {
       if (account?.provider) {
@@ -134,21 +160,44 @@ export const authOptions: AuthOptions = {
         });
 
         if (!existingUser) {
+          const userId = uuid();
           const newUser = await db.user.create({
             data: {
-              id: uuid(),
+              id: userId,
               email: user.email as string,
-              name: user.name as string,
+              name: (user.name as string) ?? '',
               emailVerified: true,
               twoFactorEnabled: false,
               twoFactorSecret: null,
             },
           });
+          try {
+            await upsertCertificationUser({ email: newUser.email, name: newUser.name ?? '', authId: userId });
+            await upsertCert2User({ email: newUser.email, name: newUser.name ?? '', authId: userId });
+          } catch (err) {
+            console.error('Provisioning to certification/cert2 failed:', err);
+            await db.user.delete({ where: { id: userId } }).catch(() => null);
+            throw new Error('Signup failed while provisioning accounts. Please try again.');
+          }
           token.id = newUser.id;
           token.twoFactorEnabled = false;
         } else {
           token.id = existingUser.id;
           token.twoFactorEnabled = existingUser.twoFactorEnabled;
+          try {
+            await upsertCertificationUser({
+              email: existingUser.email,
+              name: existingUser.name ?? '',
+              authId: existingUser.id,
+            });
+            await upsertCert2User({
+              email: existingUser.email,
+              name: existingUser.name ?? '',
+              authId: existingUser.id,
+            });
+          } catch (err) {
+            console.error('Provisioning to certification/cert2 failed for existing user:', err);
+          }
         }
       } else if (user) {
         token.id = user.id;

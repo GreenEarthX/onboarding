@@ -4,6 +4,8 @@ import { v4 as uuid } from 'uuid';
 import { sendVerificationEmail } from '@/app/lib/email/email';
 import disposableEmailDomains from 'disposable-email-domains';
 import { promises as dns } from 'dns';
+import { upsertCertificationUser, upsertCert2User } from '@/app/lib/user-provisioning';
+
 
 interface SignupData {
   name: string;
@@ -76,10 +78,11 @@ export async function handleSignup({ name, email, password, recaptchaToken }: Si
   // Create user
   const hashedPassword = await bcrypt.hash(password, 10);
   const verificationToken = uuid();
+  const userId = uuid(); // canonical identity across all DBs
 
   await db.user.create({
     data: {
-      id: uuid(),
+      id: userId,
       name,
       email,
       password: hashedPassword,
@@ -89,6 +92,20 @@ export async function handleSignup({ name, email, password, recaptchaToken }: Si
       twoFactorSecret: null,
     },
   });
+  
+  // Provision user to external certification DBs
+  try {
+    await upsertCertificationUser({ email, name, authId: userId });
+    await upsertCert2User({ email, name, authId: userId });
+  } catch (err) {
+    console.error("Provisioning to certification/cert2 failed:", err);
+
+    // strict policy: rollback onboarding user to avoid inconsistent identity state
+    await db.user.delete({ where: { id: userId } }).catch(() => null);
+
+    throw new Error("Signup failed while provisioning accounts. Please try again.");
+  }
+
 
   // Send verification email
   await sendVerificationEmail(email, verificationToken);
