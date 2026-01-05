@@ -63,6 +63,8 @@ A secure authentication system built with **Next.js**, **NextAuth.js**, and **Pr
    - Create a database named `gex_auth`.
    - Update the `DATABASE_URL` in the `.env` file (see [Environment Variables](#environment-variables)).
 
+You can use `./start_postgres.sh` to start a docker based PostgreSQL with a `gex_auth` database. 
+
 4. **Run Database Migrations**:
    ```bash
    npx prisma migrate dev
@@ -76,6 +78,22 @@ A secure authentication system built with **Next.js**, **NextAuth.js**, and **Pr
    npm run dev
    ```
    The app will be available at `http://localhost:3000`.
+
+## Microsoft Azure configuration
+
+For sending emails, a MS Azure application needs to be created and configured with a secret.
+
+These need to be inserted into the .env file.
+
+The app needs to have the proper redirect URI configured.
+
+For local development that would be http://localhost:3000/api/auth/callback/azure-ad
+
+## Google Cloud configuration
+
+For reCAPTCHA on the sign in form, a key needs to be created on Google cloud platform https://console.cloud.google.com/security/recaptcha
+
+Domain verification should be disabled for that key for local dev machines. Don't use that key anywhere else and create new ones for test and prod domains.
 
 ## Environment Variables
 Create a `.env` file in the project root and add the following variables:
@@ -93,4 +111,5 @@ EMAIL_PASS=your-email-app-password
 - **NEXTAUTH_URL**: The base URL of your application.
 - **NEXTAUTH_SECRET**: A secure key for NextAuth.js (generate using `openssl rand -base64 32`).
 - **DATABASE_URL**: PostgreSQL connection string.
-- **EMAIL_USER** and **EMAIL_PASS**: Credentials for sending emails via nodemailer (e.g., Gmail app password).
+- **EMAIL_USER** sender for emails
+- **MICROSOFT_CLIENT_ID**
