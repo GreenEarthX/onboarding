@@ -18,6 +18,11 @@ function normalizeConnectionString(url: string, preferExplicitSsl: boolean) {
   return url;
 }
 
+// Default SSL config for RDS/self-signed certificates
+const DEFAULT_SSL_CONFIG = {
+  ssl: { rejectUnauthorized: false },
+};
+
 function makePool(url: string | undefined, name: string, extraConfig: Partial<PoolConfig> = {}) {
   if (!url) throw new Error(`${name} is not defined`);
   const connectionString = normalizeConnectionString(url, Boolean(extraConfig.ssl));
@@ -35,7 +40,10 @@ let cert2Pool: Pool | null = null;
 
 export function getCertificationPool() {
   if (!certificationPool) {
-    certificationPool = makePool(process.env.CERTIFICATION_DB_URL, "CERTIFICATION_DB_URL");
+    // Added SSL config to fix "self-signed certificate" error
+    certificationPool = makePool(process.env.CERTIFICATION_DB_URL, "CERTIFICATION_DB_URL", {
+      ssl: { rejectUnauthorized: false },
+    });
   }
   return certificationPool;
 }
