@@ -24,8 +24,8 @@ export default withAuth(
        
        // Get geomap/admin URL from environment variables
        const geomapUrl = process.env.GEOMAP_URL || 'http://localhost:3001';
-       const adminUrl = process.env.GEX_ADMIN_URL || 'http://localhost:3002';
-       const allowedHosts = [new URL(geomapUrl).host, new URL(adminUrl).host];
+       //const adminUrl = process.env.GEX_ADMIN_URL || 'http://localhost:3002';
+       const allowedHosts = [new URL(geomapUrl).host/*, new URL(adminUrl).host*/];
 
        if (redirectParam) {
            try {
