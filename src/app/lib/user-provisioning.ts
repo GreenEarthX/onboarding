@@ -1,4 +1,4 @@
-import { certificationPool, cert2Pool } from "./external-dbs";
+import { getCertificationPool, getCert2Pool } from "./external-dbs";
 
 function splitName(fullName: string) {
   const trimmed = (fullName || "").trim();
@@ -28,7 +28,7 @@ export async function upsertCertificationUser(params: {
     RETURNING user_id;
   `;
 
-  const res = await certificationPool.query(sql, [params.email, firstName, lastName, params.authId]);
+  const res = await getCertificationPool().query(sql, [params.email, firstName, lastName, params.authId]);
   return res.rows[0]?.user_id as number | undefined;
 }
 
@@ -50,6 +50,6 @@ export async function upsertCert2User(params: {
     RETURNING id;
   `;
 
-  const res = await cert2Pool.query(sql, [params.email, params.name, params.authId]);
+  const res = await getCert2Pool().query(sql, [params.email, params.name, params.authId]);
   return res.rows[0]?.id as number | undefined;
 }

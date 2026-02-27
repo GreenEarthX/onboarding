@@ -63,3 +63,6 @@ coverage
 # Prisma
 prisma/migrations
 .env.example
+
+gex_postgresql_data
+.idea

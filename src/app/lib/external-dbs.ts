@@ -18,6 +18,11 @@ function normalizeConnectionString(url: string, preferExplicitSsl: boolean) {
   return url;
 }
 
+// Default SSL config for RDS/self-signed certificates
+const DEFAULT_SSL_CONFIG = {
+  ssl: { rejectUnauthorized: false },
+};
+
 function makePool(url: string | undefined, name: string, extraConfig: Partial<PoolConfig> = {}) {
   if (!url) throw new Error(`${name} is not defined`);
   const connectionString = normalizeConnectionString(url, Boolean(extraConfig.ssl));
@@ -30,9 +35,24 @@ function makePool(url: string | undefined, name: string, extraConfig: Partial<Po
   });
 }
 
-export const certificationPool = makePool(process.env.CERTIFICATION_DB_URL, "CERTIFICATION_DB_URL", {
-  ssl: { rejectUnauthorized: false },
-});
-export const cert2Pool = makePool(process.env.CERT2_DB_URL, "CERT2_DB_URL", {
-  ssl: { rejectUnauthorized: false },
-});
+let certificationPool: Pool | null = null;
+let cert2Pool: Pool | null = null;
+
+export function getCertificationPool() {
+  if (!certificationPool) {
+    // Added SSL config to fix "self-signed certificate" error
+    certificationPool = makePool(process.env.CERTIFICATION_DB_URL, "CERTIFICATION_DB_URL", {
+      ssl: { rejectUnauthorized: false },
+    });
+  }
+  return certificationPool;
+}
+
+export function getCert2Pool() {
+  if (!cert2Pool) {
+    cert2Pool = makePool(process.env.CERT2_DB_URL, "CERT2_DB_URL", {
+      ssl: { rejectUnauthorized: false },
+    });
+  }
+  return cert2Pool;
+}
