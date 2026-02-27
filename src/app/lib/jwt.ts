@@ -23,7 +23,7 @@ export function generateGeoMapTokenPair(user: any): TokenPair {
     verified: user.emailVerified || false,
     permissions: user.emailVerified ? ['read', 'edit'] : ['read'],
     name: user.name,
-    role: user.role || 'user'
+    role: user.role || 'PLANT_OPERATOR'
   };
   
   const accessToken = jwt.sign(
@@ -62,7 +62,7 @@ export function generateGeoMapToken(user: any): string {
     permissions: user.emailVerified ? ['read', 'edit'] : ['read'],
     name: user.name,
     type: 'access',
-    role: user.role || 'user'
+    role: user.role || 'PLANT_OPERATOR'
   };
   
   return jwt.sign(payload, process.env.GEOMAP_JWT_SECRET!, {

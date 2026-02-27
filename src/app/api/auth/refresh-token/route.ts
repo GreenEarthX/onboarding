@@ -24,7 +24,8 @@ export async function POST(request: NextRequest) {
         email: true,
         name: true,
         emailVerified: true,
-        twoFactorEnabled: true
+        twoFactorEnabled: true,
+        role: true
       }
     });
 
