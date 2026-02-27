@@ -20,7 +20,8 @@ export async function POST(request: NextRequest) {
         email: true,
         name: true,
         emailVerified: true,
-        twoFactorEnabled: true
+        twoFactorEnabled: true,
+        role: true
       }
     });
 
@@ -37,7 +38,8 @@ export async function POST(request: NextRequest) {
         id: user.id,
         email: user.email,
         name: user.name,
-        verified: user.emailVerified
+        verified: user.emailVerified,
+        role: user.role
       }
     });
   } catch (error) {

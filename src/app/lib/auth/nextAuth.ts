@@ -28,6 +28,7 @@ declare module 'next-auth' {
     email: string;
     name: string | null;
     password: string | null;
+    role: string;
     twoFactorEnabled: boolean;
     twoFactorSecret: string | null;
     emailVerified: boolean;
@@ -221,6 +222,8 @@ export const authOptions: AuthOptions = {
       if (
         url.startsWith('http://localhost:3001') ||
         url.startsWith('http://localhost:3000') ||
+        url.startsWith('http://localhost:3002') ||
+        (process.env.GEX_ADMIN_BASE_URL && url.startsWith(process.env.GEX_ADMIN_BASE_URL)) ||
         url.startsWith('https://geomap.greenearthx.io') ||
         url.startsWith('https://auth.greenearthx.io') ||
         url.startsWith(baseUrl)

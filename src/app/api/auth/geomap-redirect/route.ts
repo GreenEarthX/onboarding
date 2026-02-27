@@ -35,7 +35,8 @@ export async function GET(request: NextRequest) {
         email: true,
         name: true,
         emailVerified: true,
-        twoFactorEnabled: true
+        twoFactorEnabled: true,
+        role: true
       }
     });
 

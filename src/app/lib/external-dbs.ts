@@ -30,7 +30,9 @@ function makePool(url: string | undefined, name: string, extraConfig: Partial<Po
   });
 }
 
-export const certificationPool = makePool(process.env.CERTIFICATION_DB_URL, "CERTIFICATION_DB_URL");
+export const certificationPool = makePool(process.env.CERTIFICATION_DB_URL, "CERTIFICATION_DB_URL", {
+  ssl: { rejectUnauthorized: false },
+});
 export const cert2Pool = makePool(process.env.CERT2_DB_URL, "CERT2_DB_URL", {
   ssl: { rejectUnauthorized: false },
 });
