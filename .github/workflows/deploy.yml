@@ -46,7 +46,6 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            NEXTAUTH_URL=${{ vars.NEXTAUTH_URL_ONBOARDING }}
             NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
             MICROSOFT_CLIENT_ID=${{ secrets.MICROSOFT_CLIENT_ID }}
             MICROSOFT_CLIENT_SECRET=${{ secrets.MICROSOFT_CLIENT_SECRET }}
