@@ -35,6 +35,7 @@ ENV NEXTAUTH_SECRET=$NEXTAUTH_SECRET
 ENV NEXTAUTH_URL=http://localhost:3000
 
 
+
 # Build Next.js application
 RUN npm run build
 
@@ -54,7 +55,9 @@ COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
-# Set correct permissions
+# Set correct permissions — create cache dir before dropping to non-root user
+RUN mkdir -p /app/.next/cache && chown nextjs:nodejs /app/.next/cache
+
 USER nextjs
 
 EXPOSE 3000

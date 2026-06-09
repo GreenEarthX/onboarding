@@ -18,10 +18,10 @@ function normalizeConnectionString(url: string, preferExplicitSsl: boolean) {
   return url;
 }
 
-// Default SSL config for RDS/self-signed certificates
-const DEFAULT_SSL_CONFIG = {
-  ssl: { rejectUnauthorized: false },
-};
+// SSL is required for hosted DBs (Aiven etc.) but not for the local Postgres container.
+// Set DB_SSL=false to disable it (used in docker-compose for the VM deployment).
+const SSL_CONFIG: Partial<PoolConfig> =
+  process.env.DB_SSL === "false" ? {} : { ssl: { rejectUnauthorized: false } };
 
 function makePool(url: string | undefined, name: string, extraConfig: Partial<PoolConfig> = {}) {
   if (!url) throw new Error(`${name} is not defined`);
@@ -40,19 +40,14 @@ let cert2Pool: Pool | null = null;
 
 export function getCertificationPool() {
   if (!certificationPool) {
-    // Added SSL config to fix "self-signed certificate" error
-    certificationPool = makePool(process.env.CERTIFICATION_DB_URL, "CERTIFICATION_DB_URL", {
-      ssl: { rejectUnauthorized: false },
-    });
+    certificationPool = makePool(process.env.CERTIFICATION_DB_URL, "CERTIFICATION_DB_URL", SSL_CONFIG);
   }
   return certificationPool;
 }
 
 export function getCert2Pool() {
   if (!cert2Pool) {
-    cert2Pool = makePool(process.env.CERT2_DB_URL, "CERT2_DB_URL", {
-      ssl: { rejectUnauthorized: false },
-    });
+    cert2Pool = makePool(process.env.CERT2_DB_URL, "CERT2_DB_URL", SSL_CONFIG);
   }
   return cert2Pool;
 }
