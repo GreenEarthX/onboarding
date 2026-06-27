@@ -7,7 +7,9 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 # Install dependencies based on the preferred package manager
+# prisma/schema.prisma is needed here because package.json's postinstall runs `prisma generate`
 COPY package.json package-lock.json* ./
+COPY prisma ./prisma
 RUN npm ci
 
 # Rebuild the source code only when needed
